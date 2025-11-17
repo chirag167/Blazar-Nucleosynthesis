@@ -76,7 +76,7 @@ Reaction within the jet and between jet and cloud were treated separately becaus
 
 $$\dot{M} = \dot{m}_{jet} \times \Omega$$
 
-where $\dot{M} is the mass rate of change of the cloud, $\dot{m}_{jet}$ is the mass outflow rate from the jet, and $\Omega$ is the jet's cross sectional area intersecting with the cloud. The value of $\dot{M}$ can range anywhere from $10^{-6} \, \textrm{M_{\odot}/yr}$ in the BLR region to $10 \, \textrm{M_{\odot}/yr}$ in the knot region. This value is assumed to be constant throughout the simulation. The simulation runs until the cloud increases in size (volume, density or both) to several times its original size.
+where $\dot{M}$ is the mass rate of change of the cloud, $\dot{m}_{jet}$ is the mass outflow rate from the jet, and $\Omega$ is the jet's cross sectional area intersecting with the cloud. The value of $\dot{M}$ can range anywhere from $10^{-6} \, \textrm{M_{\odot}/yr}$ in the BLR region to $10 \, \textrm{M_{\odot}/yr}$ in the knot region. This value is assumed to be constant throughout the simulation. The simulation runs until the cloud increases in size (volume, density or both) to several times its original size.
 
 
 
