@@ -56,7 +56,7 @@ About $10^5$ clouds exist in the broad line region (BLR) at temperatures of abou
 Gas closer to the central engine form knots with temperatures as high as $10^9$ K, and densities as high as $10^{18} cm^{-3}$. These knots may come from the accretion disk or the intersection of the outgoing jet with the surfaces of nearby stars. These knots are assumed to be between $10^{11}$ and $10^{14}$ cm.
 
 
-\textbf{Modeling notes:} User should have ability to choose a model. Need to update geometry after each timestep!
+**Modeling notes:** User should have ability to choose a model. Need to update geometry after each timestep!
 
 ## Jet Energy, Evolution, and Composition
 
