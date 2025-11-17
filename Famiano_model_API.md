@@ -6,7 +6,7 @@
 1. [Definitions and Variables](#definitions-and-variables) 
 2. [Cloud Geometry, Evolution, and Composition](#cloud-geometry-evolution-and-composition)
 3. [Jet Energy, Evolution, and Composition](#jet-energy-evolution-and-composition)
-4. [Jet-Cloud Reaction Mechanisms](#jet-cloud-reaction-mechanism)
+4. [Jet-Cloud Reaction Mechanisms](#jet--cloud-reaction-mechanism)
 5. [Reaction Network](#reaction-network)
 6. [Time-Stepping Scheme](#time-stepping-scheme)
 7. [Survival Fractions](#survival-fractions)
