@@ -60,7 +60,7 @@ Gas closer to the central engine form knots with temperatures as high as $10^9$ 
 
 ## Jet Energy, Evolution, and Composition
 
-The jets were modeled to have primordial abundances of $^{1}H, ^{2}H, ^{3}He, ^{4}He, ^{6}Li,$ and $^{7}Li$ or simply $^{1}H [93%], ^{4}He [7%]$.
+The jets were modeled to have primordial abundances of $^{1}H, ^{2}H, ^{3}He, ^{4}He, ^{6}Li,$ and $^{7}Li$ or simply $^{1}H \[93%\], ^{4}He \[7%\]$.
 
 Energy loss of the jet was given by the fast and slow ion formulas (Ginzburg \& Syrovatskii (1964)).
 
