@@ -51,7 +51,7 @@ where, $\rho = \rho_0 (1 + \dot{M}/M)^{0.5}$ and $V = V_0 (1 + \dot{M}/M)^{0.5}$
 
 Parameters used to decribe the cloud are the initial particle number density, the length and diameter (assuming a cylindrical cloud), the cloud temperature, and the initial number fractions of elements included in the reaction network. The cloud temperature is assumed to be constant. Most simulations assumed the cloud contained primordial initial number density fraction of elements. However, a few simulations seeded the cloud with an initial number of heavier isotopes. 
 
-About $10^5$ clouds exist in the broad line region (BLR) at temperatures of about $10^4$ K. Densities of those clouds vary between $10^{11} - 10^{13} cm^{-3}$. The average cloud size is about $400 R\_{\odot}$, corresponding to a mass of $10^{-5} M_{\odot}$. The total covering factor of the BLR is estimated to be $10-25%$.
+About $10^5$ clouds exist in the broad line region (BLR) at temperatures of about $10^4$ K. Densities of those clouds vary between $10^{11} - 10^{13} cm^{-3}$. The average cloud size is about $400 R\_{\odot}$, corresponding to a mass of $10^{-5} M_{\odot}$. The total covering factor of the BLR is estimated to be $10-25\\%$.
 
 Gas closer to the central engine form knots with temperatures as high as $10^9$ K, and densities as high as $10^{18} cm^{-3}$. These knots may come from the accretion disk or the intersection of the outgoing jet with the surfaces of nearby stars. These knots are assumed to be between $10^{11}$ and $10^{14}$ cm.
 
@@ -60,7 +60,7 @@ Gas closer to the central engine form knots with temperatures as high as $10^9$ 
 
 ## Jet Energy, Evolution, and Composition
 
-The jets were modeled to have primordial abundances of $^{1}H, ^{2}H, ^{3}He, ^{4}He, ^{6}Li,$ and $^{7}Li$ or simply $^{1}H \[93%\], ^{4}He \[7%\]$.
+The jets were modeled to have primordial abundances of $^{1}H, ^{2}H, ^{3}He, ^{4}He, ^{6}Li,$ and $^{7}Li$ or simply $^{1}H \[93\\%\], ^{4}He \[7\\%\]$.
 
 Energy loss of the jet was given by the fast and slow ion formulas (Ginzburg \& Syrovatskii (1964)).
 
