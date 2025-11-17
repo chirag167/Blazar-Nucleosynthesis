@@ -51,7 +51,7 @@ where, $\rho = \rho_0 (1 + \dot{M}/M)^{0.5}$ and $V = V_0 (1 + \dot{M}/M)^{0.5}$
 
 Parameters used to decribe the cloud are the initial particle number density, the length and diameter (assuming a cylindrical cloud), the cloud temperature, and the initial number fractions of elements included in the reaction network. The cloud temperature is assumed to be constant. Most simulations assumed the cloud contained primordial initial number density fraction of elements. However, a few simulations seeded the cloud with an initial number of heavier isotopes. 
 
-About $10^5$ clouds exist in the broad line region (BLR) at temperatures of about $10^4$ K. Densities of those clouds vary between $10^{11} - 10^{13} cm^{-3}$. The average cloud size is about $400 R_{\odot}$, corresponding to a mass of $10^{-5} M_{\odot}$. The total covering factor of the BLR is estimated to be $10-25%$.
+About $10^5$ clouds exist in the broad line region (BLR) at temperatures of about $10^4$ K. Densities of those clouds vary between $10^{11} - 10^{13} cm^{-3}$. The average cloud size is about $400 R\_{\odot}$, corresponding to a mass of $10^{-5} M_{\odot}$. The total covering factor of the BLR is estimated to be $10-25%$.
 
 Gas closer to the central engine form knots with temperatures as high as $10^9$ K, and densities as high as $10^{18} cm^{-3}$. These knots may come from the accretion disk or the intersection of the outgoing jet with the surfaces of nearby stars. These knots are assumed to be between $10^{11}$ and $10^{14}$ cm.
 
@@ -77,7 +77,7 @@ Reaction within the jet and between jet and cloud were treated separately becaus
 $$\dot{M} = \dot{m}_{jet} \times \Omega$$
 
 
-where $\dot{M}$ is the mass rate of change of the cloud, $\dot{m}_{jet}$ is the mass outflow rate from the jet, and $\Omega$ is the jet's cross sectional area intersecting with the cloud. The value of $\dot{M}$ can range anywhere from $10^{-6} M_{\odot}/yr$ in the BLR region to $10 M_{\odot}/yr$ in the knot region. This value is assumed to be constant throughout the simulation. The simulation runs until the cloud increases in size (volume, density or both) to several times its original size.
+where $\dot{M}$ is the mass rate of change of the cloud, $\dot{m}\_{jet}$ is the mass outflow rate from the jet, and $\Omega$ is the jet's cross sectional area intersecting with the cloud. The value of $\dot{M}$ can range anywhere from $10^{-6} M\_{\odot}/yr$ in the BLR region to $10 M\_{\odot}/yr$ in the knot region. This value is assumed to be constant throughout the simulation. The simulation runs until the cloud increases in size (volume, density or both) to several times its original size.
 
 
 
