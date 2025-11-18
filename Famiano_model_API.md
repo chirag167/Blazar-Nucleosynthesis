@@ -15,14 +15,12 @@
 10. [Output Quanitities](#output-quantities)
 11. [Planned Code Module Mapping](#planned-code-module-mapping)
 
-\newpage
-
 ## Definitions and Variables
 
 This section contains a summary of all the variables, along with their definitions and units (if applicable). The variables used in the Famiano et al., 2002 paper were:
 
 1. $Y_i$: Abundance per baryon belonging to species $i$. It is a unitless quantity.
-2. \textbf{Y}: A vector containing the current abundances of all species used in the reaction network. It is unitless.
+2. **Y**: A vector containing the current abundances of all species used in the reaction network. It is unitless.
 3. $f(\textbf{Y})$: Time rate of change (in $s^{-1}$) of the abundance of each species. This is given by the sum of the reactions that create and destroy each species.
 4. h: A discrete time step (in seconds) taken in the network evolution.
 5. $\epsilon$: Factor to ensure that the time step is small (therefore, the change in abundance is small per time step).
@@ -83,7 +81,7 @@ where $\dot{M}$ is the mass rate of change of the cloud, $\dot{m}\_{jet}$ is the
 
 The vector of the abundance change, $\Delta$, is given by
 
-$$\left(\frac{\mathbb{1}}{h} - \tilde{J} \right) \cdot \Delta = f[Y(t)]$$
+$$\left(\frac{\tilde{I}}{h} - \tilde{J}\right) \cdot \Delta = f[Y(t)]$$
 
 where $\tilde{J}$ is the Jacobian matrix corresponding to the rate of change of $f(Y_i)$ with respect to $Y_j$. That is,
 
