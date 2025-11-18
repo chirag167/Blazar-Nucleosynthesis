@@ -15,8 +15,6 @@
 10. [Output Quanitities](#output-quantities)
 11. [Planned Code Module Mapping](#planned-code-module-mapping)
 
-\newpage
-
 ## Definitions and Variables
 
 This section contains a summary of all the variables, along with their definitions and units (if applicable). The variables used in the Famiano et al., 2002 paper were:
