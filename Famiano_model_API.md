@@ -97,7 +97,7 @@ $$h_{n+1} = \epsilon h_n min(\frac{Y_i^{n+1}}{\Delta_i})$$
 
 For species i in the jet with initial energy $E_0$, the fraction of particles surviving to energy E (via thermalization) is given by,
 
-$$S_i(E,E_0) = 1 - \int_E^{E_0} S(E^') \frac{\sum_m N_m \sigma_m(E^')}{\epsilon_i(E^')} dE^'$$
+$$S_i(E,E_0) = 1 - \int_E^{E_0} S(E^{'}) \frac{\sum_m N_m \sigma_m(E^{'})}{\epsilon_i(E^{'})} dE^{'}$$
 
 The surviving fraction was normalized to the product energy. If a particle has an initial energy $E_1 < E_0$, the survival fraction of this particle to energy $E_2 < E_1$ is,
 
