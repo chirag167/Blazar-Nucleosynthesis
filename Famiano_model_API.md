@@ -120,3 +120,131 @@ $$\zeta_{ik} = \frac{\sigma_{ik}N_i}{\sum_m \sigma_{mk}N_m}$$
 Therefore, the discretized yields are given by,
 
 $$y_{pq}^{in} = \phi_{pq}^{ik}\zeta_{ik}\frac{\delta S_{ik}}{S_{in}}$$
+
+# 10. Planned Code Module Mapping
+
+In this section, we outline the mapping of the different physical components of the simulation to specific code modules. Each module will handle a specific task, such as managing the thermonuclear network, performing jet–cloud interactions, or updating cloud properties. This structure ensures modularity, readability, and ease of future updates or modifications.
+
+## 10.1 Core Modules
+
+### **1. `network/` - Thermonuclear Network**
+
+This module handles the implementation of thermonuclear reactions, including the calculation of reaction rates and the time evolution of abundances.
+
+#### **Functions:**
+- `load_reaction_rates()`: Loads thermonuclear reaction rates from databases (e.g., NACRE, NNDC).
+- `compute_reaction_rate()`: Computes the reaction rate \( k(T) \) at a given temperature.
+- `update_abundances()`: Updates the abundances of species based on the thermonuclear network.
+- `solve_ode()`: Solves the system of ordinary differential equations for the abundance evolution using the Euler method.
+
+#### **Files:**
+- `rates.py`: Contains functions for loading and interpolating thermonuclear rates.
+- `jacobian.py`: Computes the Jacobian matrix for the ODE system.
+- `solver.py`: Implements the numerical solver for the network equations.
+
+---
+
+### **2. `jet_cloud/` - Jet-Cloud Interaction**
+
+This module models the interaction between the relativistic jet and the surrounding cloud. It handles the jet energy distribution, survival fraction calculations, and jet-induced reactions.
+
+#### **Functions:**
+- `load_jet_data()`: Loads data on jet composition, energy spectrum, and particle densities.
+- `compute_survival_fraction()`: Calculates the survival fraction \( S(E, E_0) \) for jet particles.
+- `compute_jet_yield()`: Computes the yield of particles produced by the jet-cloud interactions.
+- `update_jet_cloud_reactions()`: Updates the reaction rates for jet-induced reactions, and calculates the effect on cloud abundance.
+
+#### **Files:**
+- `energy_binning.py`: Handles energy binning of jet particles and calculates energy distributions.
+- `survival_fraction.py`: Computes survival fractions based on jet particle energy and cloud medium.
+- `yields.py`: Calculates particle yields from jet–cloud reactions.
+
+---
+
+### **3. `cloud/` - Cloud Properties and Evolution**
+
+This module tracks the properties of the cloud, including its density, temperature, and volume evolution due to jet interactions. It also manages the updating of these properties at each timestep.
+
+#### **Functions:**
+- `update_cloud_state()`: Updates the state of the cloud (density, volume, temperature) based on the interaction with the jet.
+- `compute_mass_change()`: Computes the change in the cloud's mass due to jet deposition.
+- `compute_volume_change()`: Calculates the change in cloud volume as mass is added from the jet.
+
+#### **Files:**
+- `geometry.py`: Handles cloud geometry and the evolution of cloud volume and density.
+- `state.py`: Manages cloud state, including temperature and initial abundance conditions.
+
+---
+
+### **4. `simulation/` - Simulation Control and Main Loop**
+
+This module controls the overall simulation process, including initializing the model, running the timestep loop, and updating the cloud and jet states.
+
+#### **Functions:**
+- `initialize_simulation()`: Initializes the simulation by setting up initial conditions (cloud properties, jet parameters).
+- `run_simulation()`: Executes the main simulation loop, calling relevant modules for reaction rate calculation, jet–cloud interaction, and cloud state updates.
+- `save_output()`: Saves output data (abundances, reaction rates, cloud properties) to the specified output directory.
+- `time_step_control()`: Calculates the adaptive timestep \( h \) based on error tolerance.
+
+#### **Files:**
+- `main_loop.py`: Runs the main loop of the simulation, updating the system at each timestep.
+- `output.py`: Handles output file generation, including saving data to CSV, JSON, or HDF5 formats.
+
+---
+
+### **5. `utils/` - Utility Functions**
+
+This module contains utility functions that are used across multiple parts of the simulation but are not specific to one core component.
+
+#### **Functions:**
+- `load_data_file()`: Loads any external data files (e.g., reaction rate tables, jet composition files).
+- `interpolate_data()`: Interpolates reaction rates or cross-sections as a function of temperature or energy.
+- `plot_results()`: Generates plots for abundance evolution, reaction rates, etc.
+
+#### **Files:**
+- `data_loader.py`: Handles reading of data files (e.g., CSV, JSON).
+- `plotter.py`: Handles data visualization and plotting.
+- `utilities.py`: Miscellaneous helper functions for tasks like interpolation and logging.
+
+---
+
+## 10.2 Data Inputs and Configuration Files
+
+### **1. `data/` - Data Storage and Configuration**
+
+This directory holds all external data files (e.g., reaction rate tables, jet data files) and configuration files for the simulation.
+
+#### **Files:**
+- `nacre_1999.csv`: Thermonuclear reaction rate data from NACRE (1999).
+- `jet_composition.txt`: Jet composition and energy distribution data (e.g., proton and helium abundances).
+- `jet_cloud_cross_sections.dat`: Cross-section data for jet–cloud reactions (from NNDC or EXFOR).
+- `cloud_conditions.json`: Cloud physical properties (e.g., density, temperature, initial abundances).
+
+---
+
+### **2. `config/` - Simulation Settings**
+
+This directory contains configuration files that specify the simulation parameters, such as cloud parameters, jet properties, and integration settings.
+
+#### **Files:**
+- `simulation_config.json`: Contains simulation-wide settings such as time range, initial conditions, and numerical solver parameters.
+- `reaction_config.yaml`: Lists the reactions to be included in the network and associated uncertainties.
+
+---
+
+## 10.3 Summary of Module Responsibilities
+
+| Module              | Responsibilities                                                                 |
+|---------------------|---------------------------------------------------------------------------------|
+| `network/`          | Manages the thermonuclear reaction network, calculates rates, and updates abundances. |
+| `jet_cloud/`        | Models the interaction between the jet and cloud, calculates yields and survival fractions. |
+| `cloud/`            | Tracks and updates the physical properties of the cloud (density, temperature, volume). |
+| `simulation/`       | Controls the overall simulation process, including the main loop, time-stepping, and saving outputs. |
+| `utils/`            | Provides utility functions such as data loading, interpolation, and plotting. |
+| `data/`             | Stores external data files (reaction rates, jet data, cross-sections). |
+| `config/`           | Holds configuration files for simulation settings. |
+
+---
+
+By clearly mapping each physical process to a specific module, this structure ensures that the code is organized, modular, and scalable. Each module can be independently tested and updated as needed, making the simulation more flexible and maintainable.
+
