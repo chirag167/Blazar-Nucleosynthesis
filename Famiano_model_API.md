@@ -8,7 +8,7 @@
 3. [Jet Energy, Evolution, and Composition](#jet-energy-evolution-and-composition)
 4. [Jet-Cloud Reaction Mechanisms](#jet-cloud-reaction-mechanisms)
 5. [Reaction Network](#reaction-network)
-6. [Time-Stepping Scheme](#time-stepping-scheme)
+6. [Time-Step Scheme](#time-step-scheme)
 7. [Survival Fractions](#survival-fractions)
 8. [Yields](#yields)
 9. [Data Inputs](#data-inputs)
@@ -23,7 +23,7 @@ This section contains a summary of all the variables, along with their definitio
 2. **Y**: A vector containing the current abundances of all species used in the reaction network. It is unitless.
 3. $f(\textbf{Y})$: Time rate of change (in $s^{-1}$) of the abundance of each species. This is given by the sum of the reactions that create and destroy each species.
 4. h: A discrete time step (in seconds) taken in the network evolution.
-5. $\epsilon$: Factor to ensure that the time step is small (therefore, the change in abundance is small per time step).
+5. $\epsilon$: Factor to ensure that the time step is small (therefore, the change in abundance is small per time step). It is much less than 1.
 6. $E_0$: Initial energy of the jet. For consistency let's keep this in MeV.
 7. $S(E,E_0)$: The fraction of particles in the jet that survive to energy, E. This is also called the survival fraction.
 8. $N_m$: Abundance of the particles in the cloud participating in reaction $m$.
@@ -86,3 +86,37 @@ $$\left(\frac{\tilde{I}}{h} - \tilde{J}\right) \cdot \Delta = f[Y(t)]$$
 where $\tilde{J}$ is the Jacobian matrix corresponding to the rate of change of $f(Y_i)$ with respect to $Y_j$. That is,
 
 $$\tilde{J} = J_{i,j} = \frac{\partial f(Y_i)}{\partial Y_j}$$
+
+## Time step Scheme
+
+The time step (h) at point n+1 is calculated as,
+
+$$h_{n+1} = \epsilon h_n min(\frac{Y_i^{n+1}}{\Delta_i})$$
+
+## Survival Fractions
+
+For species i in the jet with initial energy $E_0$, the fraction of particles surviving to energy E (via thermalization) is given by,
+
+$$S_i(E,E_0) = 1 - \int_E^{E_0} S(E^') \frac{\sum_m N_m \sigma_m(E^')}{\epsilon_i(E^')} dE^'$$
+
+The surviving fraction was normalized to the product energy. If a particle has an initial energy $E_1 < E_0$, the survival fraction of this particle to energy $E_2 < E_1$ is,
+
+$$S(E_2,E_1) = \frac{S_i(E_2,E_0)}{S_i(E_1,E_0)}$$
+
+## Yields
+
+The yield of particle k from all interactions between jet and cloud (including reactions from reaction products) that slow down to an energy $E_1 < E < E_2$ from an initial energy $E_0$ is,
+
+$$y_k = N_i(E_0) \int_{E_1}^{E_2} S(E,E_0) \frac{\sum_m \sigma_m(E)}{\epsilon_i(E)} dE$$
+
+The above equation also accounts for loss of particles (with the survival fraction quantity) due to any previous reactions. This is the continuous form of the yield. It can be discretized using
+
+$$\delta S_{ji} = S_j(E_i,E_0) - S_j(E_{i-1},E_0)$$
+
+Since lowest energy bin is $E_1$, then $\delta S_{j1} = S_j(E_1,E_0)$ by definition. The destruction fraction is given by,
+
+$$\zeta_{ik} = \frac{\sigma_{ik}N_i}{\sum_m \sigma_{mk}N_m}$$
+
+Therefore, the discretized yields are given by,
+
+$$y_{pq}^{in} = \phi_{pq}^{ik}\zeta_{ik}\frac{\delta S_{ik}}{S_{in}}$$
