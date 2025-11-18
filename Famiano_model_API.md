@@ -79,5 +79,14 @@ $$\dot{M} = \dot{m}_{jet} \times \Omega$$
 
 where $\dot{M}$ is the mass rate of change of the cloud, $\dot{m}\_{jet}$ is the mass outflow rate from the jet, and $\Omega$ is the jet's cross sectional area intersecting with the cloud. The value of $\dot{M}$ can range anywhere from $10^{-6} M\_{\odot}/yr$ in the BLR region to $10 M\_{\odot}/yr$ in the knot region. This value is assumed to be constant throughout the simulation. The simulation runs until the cloud increases in size (volume, density or both) to several times its original size.
 
+## Reaction Network
+
+The vector of the abundance change, $\Delta$, is given by
+
+$$\left(\frac{\mathbb{1}}{h} - \tilde{J} \right) \cdot \Delta = f[Y(t)]$$
+
+where $\tilde{J}$ is the Jacobian matrix corresponding to the rate of change of $f(Y_i)$ with respect to $Y_j$. That is,
+
+$$\tilde{J} = J_{i,j} = \frac{\partial f(Y_i)}{\partial Y_j}$$
 
 
