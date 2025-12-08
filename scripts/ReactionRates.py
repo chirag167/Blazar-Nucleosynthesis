@@ -3,6 +3,7 @@ import numpy as np
 
 def calc_reaction_rate(Z_t,A_t,channel,T9):
 
+	# Malaney and Fowler, 1989 (https://ui.adsabs.harvard.edu/abs/1989ApJ...345L...5M/abstract)
 	if channel == 'ng':
 
 		if Z_t == 3 and A_t == 8 and channel == 'ng':
