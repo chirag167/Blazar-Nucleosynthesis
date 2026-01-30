@@ -27,14 +27,15 @@ class NetworkState:
     def apply_update(self, dt):
         self.Y += self.dY * dt
 
-    def compute_dt(self, safety=0.01):
+    def compute_dt(self, safety=0.01,ymin=1e-12):
         """
         Mimics Eq. (4): limit timestep so fractional abundance
         change stays small.
         """
-        mask = self.dY != 0.0
+        mask = (self.Y > ymin) & (self.dY != 0.0)
         if not np.any(mask):
-            return 1.0  # no reactions → arbitrary dt
+            return 1e-3  # fall back dt if no changes
 
         dt_candidates = safety * np.abs(self.Y[mask] / self.dY[mask])
-        return np.min(dt_candidates)
+        dt = np.min(dt_candidates)
+        return max(dt,1e-12)  # avoid too small dt
