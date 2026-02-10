@@ -1,6 +1,23 @@
 import numpy as np
 
 class NetworkState:
+    '''Tracks the state of the simuation at any given time.
+    
+    Attributes:
+        isotopes: list of isotope names (e.g. ["p", "d", "he3", "he4"])
+        Y: array of abundances Yi
+        T: temperature
+        rho: density
+        V: volume
+        t: current time
+    
+    Bookkeeping:
+        dY: array of abundance derivatives dYi/dt (used internally)
+    
+    Methods:
+        reset_derivatives(): resets dY to zero.
+        apply_update(dt): updates Y using dY and timestep dt.
+        compute_dt(safety=0.01, ymin=1e-12): computes adaptive timestep based on current Y and dY.'''
     def __init__(
         self,
         isotopes,
