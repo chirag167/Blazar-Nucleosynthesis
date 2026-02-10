@@ -1,4 +1,15 @@
 class ReactionNetworkEngine:
+    '''Advances time for a given network state and set of reactions.
+    
+    Attributes:
+        state: NetworkState object representing current state of the system
+        operators: list of Operator objects that compute dY/dt contributions
+        record_history: if True, stores time and abundance history for plotting
+        
+    Methods: 
+        step(): advances the system by one adaptive timestep.
+        run(t_end): runs the system until time t_end.
+        '''
     def __init__(self, state, operators, record_history=False):
         self.state = state
         self.operators = operators
