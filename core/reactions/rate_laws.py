@@ -1,9 +1,9 @@
 # core/reactions/rate_laws.py
 import numpy as np
 
-def constant_rate(lam):
-    def rate(T):
-        return lam
+def constant_rate(lamda_):
+    def rate(state):
+        return lamda_
     return rate
 
 

@@ -7,9 +7,9 @@ class ThermonuclearOperator:
     to the network state.
 
     This operator:
-        - evaluates reaction fluxes R_r
-        - applies the stoichiometry matrix
-        - updates dY/dt for all species
+        - delegates reaction flux evaluation to the network
+        - applies stoichiometry via the network
+        - accumulates dY/dt contributions in the state
 
     It does NOT:
         - control time stepping
@@ -44,22 +44,8 @@ class ThermonuclearOperator:
             operator interface).
         """
 
-        # Compute reaction fluxes for all reactions
-        rates = []
+        # Delegate all reaction + stoichiometry logic to the network
+        dYdt = self.network.change_in_abund(state)
 
-        for rxn in self.network.reactions:
-            # Evaluate the reaction rate (can depend on T, rho, time, etc.)
-            lam = rxn.rate_func(state)
-
-            # Compute reaction flux:
-            # R = λ × Π_i Y_i^{ν_i}
-            R = lam
-            for i, nu in rxn.reactants:
-                R *= state.Y[i] ** nu
-
-            rates.append(R)
-
-        rates = np.array(rates)
-
-        # Apply stoichiometry: dY += S · R
-        state.dY += self.network.S @ rates
+        # Accumulate into state derivatives
+        state.dY += dYdt

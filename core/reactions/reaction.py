@@ -92,3 +92,10 @@ class Reaction:
 
         # Convert dictionary back to list of (index, coefficient) pairs
         return list(d.items())
+
+
+    def rate(self, state):
+        """
+        Compute reaction rate using full network state.
+        """
+        return self.rate_func(state)

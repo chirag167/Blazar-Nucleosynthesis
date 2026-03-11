@@ -79,3 +79,63 @@ class ReactionNetwork:
                 S[i, r] += nu
 
         return S
+
+    def reaction_fluxes(self, state):
+        """
+        Compute reaction flux vector R for the current state.
+
+        Uses:
+            λ(T) = <σv> from reaction.rate(state)
+            Includes density factors for multi-body reactions.
+        """
+
+        R = np.zeros(self.M)
+
+        for r, rxn in enumerate(self.reactions):
+
+        # Bare nuclear rate coefficient <σv>
+            lam = rxn.rate(state)
+
+        # Multiply by abundance factors
+            abundance_factor = 1.0
+            for i, nu in rxn.reactants:
+                abundance_factor *= state.Y[i] ** nu
+
+        # Determine number of reacting bodies
+            n_reactants = sum(nu for _, nu in rxn.reactants)
+
+        # Apply density factors:
+        # 1-body decay: no rho
+        # 2-body reaction: rho * N_A
+            if n_reactants == 1:
+                density_factor = 1.0
+            elif n_reactants == 2:
+                density_factor = state.rho * 6.02214076e23  # N_A
+            else:
+                raise NotImplementedError(
+                    "Reactions with more than 2 reactants not yet supported.")
+
+            R[r] = density_factor * lam * abundance_factor
+
+        return R
+
+
+    def change_in_abund(self, state):
+        """
+        Compute time derivative of abundances:
+
+            dY/dt = S · R
+
+        Parameters
+        ----------
+        state : NetworkState
+
+        Returns
+        -------
+        numpy.ndarray
+            Time derivative of abundance vector (size N).
+        """
+
+        R = self.reaction_fluxes(state)
+        dYdt = self.S @ R
+        return dYdt
