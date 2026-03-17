@@ -6,19 +6,9 @@ Stopping power ε(E) and continuous energy loss.
 
 Famiano (2002) uses "fast and slow ion formulas" (citing Ginzburg & Syrovatskii 1964)
 and notes that a 4He projectile of 400 MeV has a range of ~1e11 cm in a medium with
-electron density ~1e11 cm^-3 (paper text).
+electron density ~1e11 cm^-3.
 
-Because the user does not have the original reference and wants a debuggable starting
-point, this module implements a *surrogate* stopping power model:
 
-    ε(E, n_e) = ε_ref * (n_e / n_e_ref)
-
-with ε_ref calibrated using a reference "range" at (E_ref, n_e_ref).
-
-Later upgrades
---------------
-When you move beyond exact reproduction tests or adopt published stopping-power tables,
-consider using NIST PSTAR/ASTAR/ESTAR tables and/or a Bethe–Bloch implementation.
 """
 from __future__ import annotations
 
