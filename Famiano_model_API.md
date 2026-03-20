@@ -25,8 +25,8 @@ Summary of variables used in Famiano et al. (2002), their definitions, and units
 | Symbol | Description | Units |
 |--------|-------------|-------|
 | $Y_i$ | Abundance per baryon of species $i$ | dimensionless |
-| $\mathbf{Y}$ | Vector of all species abundances | dimensionless |
-| $f(\mathbf{Y})$ | Time rate of change of each species abundance | s$^{-1}$ |
+| $\boldsymbol{Y}$ | Vector of all species abundances | dimensionless |
+| $f(\boldsymbol{Y})$ | Time rate of change of each species abundance | s$^{-1}$ |
 | $h$ | Discrete timestep | s |
 | $\epsilon$ | Safety factor for adaptive timestep ($\ll 1$; $\epsilon = 0.01$) | dimensionless |
 | $E_0$ | Initial jet particle energy | MeV |
@@ -53,7 +53,7 @@ Three cloud evolution models are available:
 2. **Constant density:** $dV/dt = \dot{M}/\rho_0$
 3. **Variable volume and density:**
 
-$$\frac{d(\rho V)}{dt} = \dot{M} \implies \rho V = \rho_0 V_0 \left(1 + \frac{\dot{M}}{M_0}\right)$$
+$$\frac{d(\rho V)}{dt} = \dot{M} \quad \Rightarrow \quad \rho V = \rho_0 V_0 \left(1 + \frac{\dot{M}}{M_0}\right)$$
 
 where $\rho = \rho_0 (1 + \dot{M}/M)^{0.5}$ and $V = V_0 (1 + \dot{M}/M)^{0.5}$.
 
@@ -81,7 +81,7 @@ Some models seed the cloud with additional heavier isotopes (labeled model varia
 
 ### BLR Context
 
-About $10^5$ clouds exist in the BLR at $T \approx 10^4$ K and $n \sim 10^{11}$–$10^{13}$ cm$^{-3}$. The average cloud size is $\sim 400\ R_\odot$ ($\approx 2.8 \times 10^{13}$ cm), with a mass of $\sim 10^{-5}\ M_\odot$. The total BLR mass is $M_0 \sim 10^6\ M_\odot$. Dense central knots can reach $T \sim 10^9$ K and $n \sim 10^{18}$ cm$^{-3}$ (Model A).
+About $10^5$ clouds exist in the BLR at $T \approx 10^4$ K and $n \sim 10^{11}$–$10^{13}$ cm$^{-3}$. The average cloud size is ${\sim}400\;R_\odot$ ($\approx 2.8 \times 10^{13}$ cm), with a mass of ${\sim}10^{-5}\;M_\odot$. The total BLR mass is $M_0 \sim 10^6\;M_\odot$. Dense central knots can reach $T \sim 10^9$ K and $n \sim 10^{18}$ cm$^{-3}$ (Model A).
 
 ---
 
@@ -130,10 +130,10 @@ Each species' injection bin value is set to $f_\mathrm{norm} \times \chi_\mathrm
 
 | Quantity | Value |
 |----------|-------|
-| $\dot{M}$ | $10^{-6}\ M_\odot\ \mathrm{yr}^{-1} = 6.30 \times 10^{19}\ \mathrm{g\ s}^{-1}$ |
-| $\Phi$ | $1.60 \times 10^{20}\ \mathrm{cm}^{-2}\ \mathrm{s}^{-1}$ |
-| $n_\mathrm{jet}$ | $1.24 \times 10^{10}\ \mathrm{cm}^{-3}$ |
-| $n_\mathrm{cloud}$ | $10^{11}\ \mathrm{cm}^{-3}$ |
+| $\dot{M}$ | $10^{-6}\;M_\odot\;\mathrm{yr}^{-1} = 6.30 \times 10^{19}\;\mathrm{g\;s}^{-1}$ |
+| $\Phi$ | $1.60 \times 10^{20}\;\mathrm{cm}^{-2}\;\mathrm{s}^{-1}$ |
+| $n_\mathrm{jet}$ | $1.24 \times 10^{10}\;\mathrm{cm}^{-3}$ |
+| $n_\mathrm{cloud}$ | $10^{11}\;\mathrm{cm}^{-3}$ |
 | $f_\mathrm{norm}$ | $0.1245$ |
 
 ### $\Delta M / M_0$ Tracking
@@ -142,7 +142,7 @@ Famiano's x-axis is the **cumulative fractional mass** of jet material deposited
 
 $$\frac{\Delta M}{M_0}(t) = \frac{\dot{M} \cdot t}{M_0}$$
 
-with $M_0 = 10^6\ M_\odot$ (total BLR mass). This gives $\Delta M / M_0 \sim 10^{-8}$ at $t \sim 10^4$ s for Model B. Note: this is **not** relative to a single clump mass.
+with $M_0 = 10^6\;M_\odot$ (total BLR mass). This gives $\Delta M / M_0 \sim 10^{-8}$ at $t \sim 10^4$ s for Model B. Note: this is **not** relative to a single clump mass.
 
 ---
 
@@ -152,7 +152,7 @@ Jet material introduced into the cloud is assumed to be well-mixed following the
 
 $$\dot{M} = \dot{m}_\mathrm{jet} \times \Omega$$
 
-where $\dot{M}$ is the cloud mass rate of change, $\dot{m}_\mathrm{jet}$ is the jet mass outflow rate, and $\Omega$ is the jet cross-sectional area intersecting with the cloud. $\dot{M}$ ranges from $\sim 10^{-6}\ M_\odot\ \mathrm{yr}^{-1}$ (BLR) to $\sim 10\ M_\odot\ \mathrm{yr}^{-1}$ (knot).
+where $\dot{M}$ is the cloud mass rate of change, $\dot{m}_\mathrm{jet}$ is the jet mass outflow rate, and $\Omega$ is the jet cross-sectional area intersecting with the cloud. $\dot{M}$ ranges from ${\sim}10^{-6}\;M_\odot\;\mathrm{yr}^{-1}$ (BLR) to ${\sim}10\;M_\odot\;\mathrm{yr}^{-1}$ (knot).
 
 Reactions within the jet and between jet and cloud are treated separately because they do not follow the Boltzmann energy distribution.
 
@@ -174,7 +174,7 @@ Products with $A < 8$ (n, d, t, $^3$He, $^4$He, $^6$Li, $^7$Li) can in principle
 
 The implicit Euler update for the abundance vector is:
 
-$$\left(\frac{\tilde{I}}{h} - \tilde{J}\right) \cdot \Delta = f[\mathbf{Y}(t)]$$
+$$\left(\frac{\tilde{I}}{h} - \tilde{J}\right) \cdot \Delta = f[\boldsymbol{Y}(t)]$$
 
 where $\tilde{J}$ is the Jacobian matrix:
 
@@ -313,7 +313,7 @@ The simulation is organized into the following directories and files.
 |------|----------------|
 | `state.py` | Data containers: `CloudState`, `CascadeState`, `SolverState`, `NetworkState`, `SpeciesData`, `ProjectileSpectrum` |
 | `reactions.py` | `CrossSectionTable`, `Reaction`, `ReactionLibrary`: load, parse, and interpolate cross-section data; CM→lab conversion; threshold computation |
-| `cascade.py` | `run_cascade_step()`: computes $dY/dt$ for all cloud species from jet–cloud reactions using the loaded reaction library |
+| `cascade.py` | `run_cascade_step()`: computes $dY/dt$ for all cloud species from jet-cloud reactions using the loaded reaction library |
 | `timestep.py` | `compute_next_dt()`, `estimate_initial_dt()`, `euler_increment()`: Famiano eq. (4) adaptive timestep |
 | `stopping.py` | Stopping power $\epsilon_i(E)$ via fast/slow ion formulae (Ginzburg & Syrovatskii 1964) |
 | `survival.py` | Survival fraction $S_i(E, E_0)$ integration |
@@ -337,7 +337,7 @@ The simulation is organized into the following directories and files.
 - `load_mass_table(path)`: loads AME 2020 atomic masses from JSON; falls back to 32-nuclide built-in table
 - `q_value_mev(reactants_stoich, products_stoich)`: Q-value from atomic masses
 - `reaction_threshold_lab_mev(projectile, target, q_mev)`: non-relativistic lab-frame threshold for endothermic reactions
-- `cm_energy_to_lab_mev(t_cm_mev, m_projectile_mev, m_target_mev)`: relativistic CM→lab energy conversion using Mandelstam $s$
+- `cm_energy_to_lab_mev(t_cm_mev, m_projectile_mev, m_target_mev)`: relativistic CM-to-lab energy conversion using Mandelstam $s$
 - `cm_to_lab_energy_mev(t_cm_mev, projectile, target)`: species-name wrapper for the above
 
 ### `nonthermal/` — Legacy Survival Fraction Code
@@ -363,9 +363,9 @@ Runtime output directory (not tracked in version control except `.gitkeep`). See
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Group-2 non-thermal reactions (heavy targets) | **Done** | 46 channels; CM→lab conversion; threshold enforcement |
-| Adaptive explicit Euler timestep | **Done** | Famiano eq. (4); $h_\mathrm{min}$/$h_\mathrm{max}$ bounds; max growth cap |
+| Adaptive explicit Euler timestep | **Done** | Famiano eq. (4); $h_\mathrm{min}$ / $h_\mathrm{max}$ bounds; max growth cap |
 | Jet normalization ($f_\mathrm{norm}$) | **Done** | Physical $n_\mathrm{jet}/n_\mathrm{cloud}$ from mass rate and cloud geometry |
-| $\Delta M / M_0$ tracking | **Done** | Relative to total BLR mass $M_0 = 10^6\ M_\odot$ |
+| $\Delta M/M_0$ tracking | **Done** | Relative to total BLR mass $M_0 = 10^6\;M_\odot$ |
 | Cloud species expansion | **Done** | All reaction products pre-seeded at $Y=0$ before evolution |
 | CM→lab energy conversion | **Done** | Relativistic; auto-applied on load for CM-frame data files |
 | Reaction threshold enforcement | **Done** | Endothermic reactions suppressed below $E_\mathrm{thr}$ |
