@@ -24,7 +24,6 @@ def survival(A_cl, X_cl, X_ion, Z, E, A, n_e, dt, T_e, S, n_target, sigma, eps=1
     
     '''
 
-
     # --- stopping power ---
     epsilon = stopping_power(A_cl, X_cl, X_ion, Z, E, A, n_e, dt, T_e, eps)  # MeV/cm
 

@@ -1,0 +1,74 @@
+{
+  "_comment": [
+    "Cloud target properties following Famiano (2002) Table 3.",
+    "Three models are defined; uncomment the one you want to run.",
+    "",
+    "Model B is the recommended starting point for reproduction:",
+    "  BLR cloud, n = 1e11 cm^-3, T = 1e4 K.",
+    "  No thermonuclear reactions (T too low), pure non-thermal cascade.",
+    "",
+    "Model A is the dense central knot: n = 1e18 cm^-3, T = 6e8 K.",
+    "  Thermonuclear reactions become important at later times.",
+    "",
+    "Composition is 'primordial': X_H ~ 0.75, X_He ~ 0.25 by mass.",
+    "Y_i are number-per-baryon abundances: Y_H = 0.75, Y_He = 0.25/4 = 0.0625.",
+    "Trace primordial D (~1.7e-5), 3He (~1e-5), 7Li (~4.7e-10) also included.",
+    "All other species start at zero (or seeded in the 'S' composition models)."
+  ],
+
+  "_model_select": "B",
+
+  "model_B": {
+    "_description": "BLR cloud — Famiano (2002) Table 3, Model B",
+    "abundance_type": "Y",
+    "abundances": {
+      "p":   0.750,
+      "d":   1.7e-5,
+      "3He": 1.0e-5,
+      "4He": 0.0625,
+      "7Li": 4.7e-10
+    },
+    "density_cm3": 1.0e11,
+    "temperature_K": 1.0e4,
+    "ionization_fraction": 0.001,
+    "cloud_length_cm": 5.0e11,
+    "cloud_diameter_cm": 5.0e11
+  },
+
+  "model_A": {
+    "_description": "Dense central knot — Famiano (2002) Table 3, Model A",
+    "abundance_type": "Y",
+    "abundances": {
+      "p":   0.750,
+      "d":   1.7e-5,
+      "3He": 1.0e-5,
+      "4He": 0.0625,
+      "7Li": 4.7e-10
+    },
+    "density_cm3": 1.0e18,
+    "temperature_K": 6.0e8,
+    "ionization_fraction": 1.0,
+    "cloud_length_cm": 1.0e11,
+    "cloud_diameter_cm": 1.0e11
+  },
+
+  "abundance_type": "Y",
+  "abundances": {
+    "p":   0.750,
+    "d":   1.7e-5,
+    "3He": 1.0e-5,
+    "4He": 0.0625,
+    "7Li": 4.7e-10
+  },
+  "density_cm3": 1.0e11,
+  "temperature_K": 1.0e4,
+  "ionization_fraction": 0.001,
+  "cloud_length_cm": 5.0e11,
+  "cloud_diameter_cm": 5.0e11,
+  "blr_mass_Msun": 1.0e6,
+
+  "metadata": {
+    "description": "BLR cloud, primordial composition — Famiano (2002) Table 3 Model B",
+    "reference": "Famiano, Boyd & Kajino (2002) ApJ 576 89"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "_comment": [
+    "Solver and energy-grid settings for Famiano (2002) reproduction.",
+    "",
+    "Energy grid:",
+    "  Famiano used EVENLY SPACED bins of 5 MeV for a 400 MeV 4He jet.",
+    "  For a 400 MeV jet, 80 bins of 5 MeV covering 0–400 MeV is appropriate.",
+    "  Set type='linear', e_min=2.5, e_max=402.5, n_bins=80 for this.",
+    "",
+    "Timestep:",
+    "  gamma = 0.01 per Famiano eq. (4) and text (Section 3).",
+    "  Initial dt: use estimate_initial_dt() from the initial dY/dt.",
+    "",
+    "Integration method:",
+    "  Famiano used the IMPLICIT Euler method (eq. 2), not explicit Euler.",
+    "  The jacobian.py module supports this; run_famiano.py currently uses",
+    "  EXPLICIT Euler (first-order) which is adequate for the non-thermal",
+    "  Model B (no thermonuclear reactions). For Model A (hot dense clump),",
+    "  switch to implicit integration using jacobian.py.",
+    "",
+    "Run time:",
+    "  Famiano runs until the cloud mass increases by a large factor.",
+    "  For Model B: mass_rate = 1e-6 Msun/yr on a 1e6 Msun cloud → slow.",
+    "  The time axis in Famiano's figures is fractional mass change DM/M0.",
+    "  A sensible t_end for initial testing is 1e6 yr = 3.15e13 s."
+  ],
+
+  "time": {
+    "t0_s": 0.0,
+    "tmax_s": 1.0e5,
+    "dt_s": 1.0,
+    "_comment": "tmax_s = 1e5 s (~1 day); Famiano (2002) bottom x-axis is in seconds (~10^4 s); dt_s is initial guess only"
+  },
+
+  "energy_grid": {
+    "type": "linear",
+    "e_min": 2.5,
+    "e_max": 402.5,
+    "n_bins": 80,
+    "_comment": [
+      "Famiano: 'energy bin width was taken to be ~5 MeV for a 400 MeV 4He jet'.",
+      "Linear grid, 80 bins × 5 MeV = 400 MeV range.",
+      "e_min = 2.5 MeV (half-bin below 5), e_max = 402.5 MeV.",
+      "Injection bin is bin #79 (0-indexed) at E ~ 397.5–402.5 MeV."
+    ]
+  },
+
+  "solver": {
+    "gamma": 0.01,
+    "dt_min_s": 1.0e-2,
+    "dt_max_s": 1.0e4,
+    "max_steps": 100000,
+    "_comment": "gamma = 0.01 per Famiano eq. (4) Section 3; dt_min/max scaled for seconds-timescale run"
+  },
+
+  "output": {
+    "history_csv": "outputs/abundance_history.csv",
+    "final_state_json": "outputs/final_state.json",
+    "write_every_n_steps": 100
+  }
+}

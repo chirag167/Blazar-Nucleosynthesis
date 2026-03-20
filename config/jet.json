@@ -1,0 +1,59 @@
+{
+  "_comment": [
+    "Blazar jet (beam) composition following Famiano (2002).",
+    "",
+    "Famiano used two jet compositions:",
+    "  (1) Simple: 1H + 4He with number fractions 0.93 and 0.07",
+    "  (2) Primordial: 1H, 2H, 3He, 4He, 6Li, 7Li",
+    "",
+    "Jet energies: 50A–250A MeV (i.e., 50–250 MeV/nucleon).",
+    "For Models A and B, E_{4He} = 400 MeV (100 MeV/nucleon, beta ~ 0.45).",
+    "",
+    "Famiano injected particles at a SINGLE energy (monoenergetic injection),",
+    "not a power-law spectrum. The energy distribution evolves as particles slow.",
+    "Set spectrum.type = 'monoenergetic' for exact Famiano reproduction.",
+    "",
+    "The mass injection rate M_dot [M_sun/yr] sets the absolute normalization.",
+    "Model A: M_dot = 0.1 M_sun/yr; Model B: M_dot = 1e-6 M_sun/yr.",
+    "For the non-thermal network, only the relative composition matters",
+    "— normalise to injected particles per unit time via n_dot_cm3_s."
+  ],
+
+  "species": ["p", "4He"],
+
+  "composition_number_fractions": {
+    "p":   0.93,
+    "4He": 0.07,
+    "_comment": "Famiano simple jet composition, Table 3 / Section 2"
+  },
+
+  "spectrum": {
+    "type": "monoenergetic",
+    "E_per_nucleon_MeV": 100.0,
+    "_comment_energy": [
+      "For 4He: E = 100 * 4 = 400 MeV (Famiano Table 3, Models A and B).",
+      "For p: E = 100 * 1 = 100 MeV.",
+      "Famiano states jet energies are 50A-250A MeV, so 50-250 MeV/nucleon."
+    ],
+    "normalization": 1.0,
+    "_comment_norm": "Relative normalization; absolute scale set by mass_rate"
+  },
+
+  "mass_rate": {
+    "model_A_Msun_per_yr": 0.1,
+    "model_B_Msun_per_yr": 1.0e-6,
+    "_comment": "Used for model dynamics (cloud mass growth) — not yet coupled to cascade"
+  },
+
+  "only_treat_A_lt_8_as_nonthermal": true,
+  "_comment_A8": [
+    "Famiano: 'only particles with A < 8 are treated as energetic projectiles;",
+    "heavier reaction products are assumed to thermalize immediately in the cloud'.",
+    "This constraint is applied in reactions.py via default_can_continue_nonthermal()."
+  ],
+
+  "metadata": {
+    "description": "Famiano (2002) simple jet: p + 4He, monoenergetic 100 MeV/nucleon",
+    "reference": "Famiano, Boyd & Kajino (2002) ApJ 576 89, Section 2 and Table 3"
+  }
+}
