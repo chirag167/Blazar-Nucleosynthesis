@@ -1,250 +1,379 @@
 # Famiano Model API and Code Specification
 
-
 ## Table of Contents
 
-1. [Definitions and Variables](#definitions-and-variables) 
+1. [Definitions and Variables](#definitions-and-variables)
 2. [Cloud Geometry, Evolution, and Composition](#cloud-geometry-evolution-and-composition)
 3. [Jet Energy, Evolution, and Composition](#jet-energy-evolution-and-composition)
-4. [Jet-Cloud Reaction Mechanisms](#jet-cloud-reaction-mechanisms)
-5. [Reaction Network](#reaction-network)
-6. [Time-Step Scheme](#time-step-scheme)
-7. [Survival Fractions](#survival-fractions)
-8. [Yields](#yields)
-9. [Data Inputs](#data-inputs)
-10. [Output Quanitities](#output-quantities)
-11. [Planned Code Module Mapping](#planned-code-module-mapping)
+4. [Jet Normalization](#jet-normalization)
+5. [Jet-Cloud Reaction Mechanisms](#jet-cloud-reaction-mechanisms)
+6. [Reaction Network](#reaction-network)
+7. [Time-Step Scheme](#time-step-scheme)
+8. [Survival Fractions](#survival-fractions)
+9. [Yields](#yields)
+10. [Data Inputs](#data-inputs)
+11. [Output Quantities](#output-quantities)
+12. [Code Module Reference](#code-module-reference)
+13. [Implementation Status](#implementation-status)
+
+---
 
 ## Definitions and Variables
 
-This section contains a summary of all the variables, along with their definitions and units (if applicable). The variables used in the Famiano et al., 2002 paper were:
+Summary of variables used in Famiano et al. (2002), their definitions, and units.
 
-1. $Y_i$: Abundance per baryon belonging to species $i$. It is a unitless quantity.
-2. **Y**: A vector containing the current abundances of all species used in the reaction network. It is unitless.
-3. $f(\textbf{Y})$: Time rate of change (in $s^{-1}$) of the abundance of each species. This is given by the sum of the reactions that create and destroy each species.
-4. h: A discrete time step (in seconds) taken in the network evolution.
-5. $\epsilon$: Factor to ensure that the time step is small (therefore, the change in abundance is small per time step). It is much less than 1.
-6. $E_0$: Initial energy of the jet. For consistency let's keep this in MeV.
-7. $S(E,E_0)$: The fraction of particles in the jet that survive to energy, E. This is also called the survival fraction.
-8. $N_m$: Abundance of the particles in the cloud participating in reaction $m$.
-9. $\epsilon_i$: Stopping power of the incident particles in the medium. Stopping power tells us essentially how far the jet particles can travel in the cloud before coming to a complete stop.
-10. $y_k$: Yield for a particle, k, produced by the reactions between cloud and jet particles.
-11. $\zeta_{ik}$: Destruction fraction ($\zeta$) is the fraction of reacting jet particles with energy $E_k$ that are destroyed via reaction $i$.
-12. $\sigma_{ik}$: The cross section for reaction $i$ and projectile energy $E_k$, is the average cross section for $E_{k-1} < E < E_k$.
-13. $\phi_{pq}^{ik}$: Energy distribution tensor is defined to be the fraction of products p with energy $E_q$ from a reaction $i$ with a projectile that has energy $E_k$. For constant reaction type ($i$), projectile energy ($E_k$), and products ($p$), this tensor gives the energy distribution of product $p$ and is normalized to unity, i.e., $\sum_q \phi_{pq}^{ik} = 1$.
-14. $y_{pq}^{in}$: Yield of particles $p$ with discrete energy $E_q$ per incident projectile with energy $E_n$ in reaction $i$ between jet and cloud.
+| Symbol | Description | Units |
+|--------|-------------|-------|
+| $Y_i$ | Abundance per baryon of species $i$ | dimensionless |
+| $\mathbf{Y}$ | Vector of all species abundances | dimensionless |
+| $f(\mathbf{Y})$ | Time rate of change of each species abundance | s$^{-1}$ |
+| $h$ | Discrete timestep | s |
+| $\epsilon$ | Safety factor for adaptive timestep ($\ll 1$; $\epsilon = 0.01$) | dimensionless |
+| $E_0$ | Initial jet particle energy | MeV |
+| $S(E, E_0)$ | Survival fraction: fraction of jet particles surviving to energy $E$ | dimensionless |
+| $N_m$ | Abundance of cloud species participating in reaction $m$ | dimensionless |
+| $\epsilon_i$ | Stopping power of incident jet particles in the cloud medium | MeV cm$^{-1}$ |
+| $y_k$ | Yield of product particle $k$ from jet–cloud reactions | dimensionless |
+| $\zeta_{ik}$ | Destruction fraction: fraction of jet particles at energy $E_k$ destroyed via reaction $i$ | dimensionless |
+| $\sigma_{ik}$ | Cross section for reaction $i$ at projectile energy $E_k$ | mb |
+| $\phi_{pq}^{ik}$ | Energy distribution tensor: fraction of products $p$ with energy $E_q$ from reaction $i$ at energy $E_k$ | dimensionless |
+| $y_{pq}^{in}$ | Yield of particles $p$ with energy $E_q$ per incident projectile at energy $E_n$ in reaction $i$ | dimensionless |
+| $\dot{M}$ | Jet mass deposition rate into the cloud | g s$^{-1}$ |
+| $M_0$ | Total BLR mass | g |
+| $\Delta M / M_0$ | Cumulative fractional mass increase of the BLR (Famiano's x-axis) | dimensionless |
+| $f_\mathrm{norm}$ | Jet-to-cloud number density ratio $n_\mathrm{jet}/n_\mathrm{cloud}$ | dimensionless |
 
+---
 
 ## Cloud Geometry, Evolution, and Composition
 
-There are three cloud models used:
+Three cloud evolution models are available:
 
-1. Constant volume: $d\rho/dt = \dot{M}/V_0$
-2. Constant density: $dV/dt = \dot{M}/\rho_0$
-3. Variable volume and density:
+1. **Constant volume:** $d\rho/dt = \dot{M}/V_0$
+2. **Constant density:** $dV/dt = \dot{M}/\rho_0$
+3. **Variable volume and density:**
 
-$\frac{d(\rho V)}{dt} = \dot{M} \implies \rho V = \rho_0 V_0 (1 + \frac{\dot{M}}{M_0})$
+$$\frac{d(\rho V)}{dt} = \dot{M} \implies \rho V = \rho_0 V_0 \left(1 + \frac{\dot{M}}{M_0}\right)$$
 
-where, $\rho = \rho_0 (1 + \dot{M}/M)^{0.5}$ and $V = V_0 (1 + \dot{M}/M)^{0.5}$
+where $\rho = \rho_0 (1 + \dot{M}/M)^{0.5}$ and $V = V_0 (1 + \dot{M}/M)^{0.5}$.
 
-Parameters used to decribe the cloud are the initial particle number density, the length and diameter (assuming a cylindrical cloud), the cloud temperature, and the initial number fractions of elements included in the reaction network. The cloud temperature is assumed to be constant. Most simulations assumed the cloud contained primordial initial number density fraction of elements. However, a few simulations seeded the cloud with an initial number of heavier isotopes. 
+### Cloud Model Parameters
 
-About $10^5$ clouds exist in the broad line region (BLR) at temperatures of about $10^4$ K. Densities of those clouds vary between $10^{11} - 10^{13} cm^{-3}$. The average cloud size is about $400 R\_{\odot}$, corresponding to a mass of $10^{-5} M_{\odot}$. The total covering factor of the BLR is estimated to be $10-25\\%$.
+| Parameter | Model B (BLR) | Model A (Knot) |
+|-----------|--------------|----------------|
+| $n$ (cm$^{-3}$) | $10^{11}$ | $10^{18}$ |
+| $T$ (K) | $10^4$ | $6 \times 10^8$ |
+| Ionization fraction | 0.001 | 1.0 |
+| Length (cm) | $5 \times 10^{11}$ | $10^{11}$ |
+| Diameter (cm) | $5 \times 10^{11}$ | $10^{11}$ |
 
-Gas closer to the central engine form knots with temperatures as high as $10^9$ K, and densities as high as $10^{18} cm^{-3}$. These knots may come from the accretion disk or the intersection of the outgoing jet with the surfaces of nearby stars. These knots are assumed to be between $10^{11}$ and $10^{14}$ cm.
+### Initial Composition (Primordial)
 
+| Species | $Y_i$ |
+|---------|-------|
+| p ($^1$H) | 0.750 |
+| d ($^2$H) | $1.7 \times 10^{-5}$ |
+| $^3$He | $1.0 \times 10^{-5}$ |
+| $^4$He | 0.0625 |
+| $^7$Li | $4.7 \times 10^{-10}$ |
 
-**Modeling notes:** User should have ability to choose a model. Need to update geometry after each timestep!
+Some models seed the cloud with additional heavier isotopes (labeled model variants "S").
+
+### BLR Context
+
+About $10^5$ clouds exist in the BLR at $T \approx 10^4$ K and $n \sim 10^{11}$–$10^{13}$ cm$^{-3}$. The average cloud size is $\sim 400\ R_\odot$ ($\approx 2.8 \times 10^{13}$ cm), with a mass of $\sim 10^{-5}\ M_\odot$. The total BLR mass is $M_0 \sim 10^6\ M_\odot$. Dense central knots can reach $T \sim 10^9$ K and $n \sim 10^{18}$ cm$^{-3}$ (Model A).
+
+---
 
 ## Jet Energy, Evolution, and Composition
 
-The jets were modeled to have primordial abundances of $^{1}H, ^{2}H, ^{3}He, ^{4}He, ^{6}Li,$ and $^{7}Li$ or simply $^{1}H \[93\\%\], ^{4}He \[7\\%\]$.
+Jets are modeled with primordial composition:
 
-Energy loss of the jet was given by the fast and slow ion formulas (Ginzburg \& Syrovatskii (1964)).
+- **Simple:** $^1$H [93%], $^4$He [7%] by number
+- **Primordial:** $^1$H, $^2$H, $^3$He, $^4$He, $^6$Li, $^7$Li
 
+Particles are injected at a fixed energy per nucleon (monoenergetic spectrum). The current default is **100 MeV/nucleon**, giving:
+
+- Proton injection energy: 100 MeV
+- $^4$He injection energy: 400 MeV
+- $\beta = 0.428$, $\gamma = 1.107$ at 100 MeV/nucleon
+
+Energy loss follows the fast-ion and slow-ion stopping power formulae from Ginzburg & Syrovatskii (1964), implemented in `core/stopping.py`.
+
+Only species with $A < 8$ are treated as energetic (non-thermal) projectiles, per Famiano Section 3: p, n, d, t, $^3$He, $^4$He, $^6$Li, $^7$Li.
+
+---
+
+## Jet Normalization
+
+The spectrum normalization converts the monoenergetic injection spectrum from arbitrary units to physical number densities relative to the cloud.
+
+### Derivation
+
+The steady-state number density of jet particles in the cloud is:
+
+$$n_\mathrm{jet} = \frac{\Phi}{v_\mathrm{jet}}$$
+
+where the particle flux through the cloud face is:
+
+$$\Phi = \frac{\dot{M}/m_\mathrm{avg}}{A_\mathrm{cloud}}, \quad A_\mathrm{cloud} = \pi (d/2)^2$$
+
+with $m_\mathrm{avg}$ the mean jet particle mass and $v_\mathrm{jet} = \beta c$.
+
+The dimensionless normalization factor is:
+
+$$f_\mathrm{norm} = \frac{n_\mathrm{jet}}{n_\mathrm{cloud}}$$
+
+Each species' injection bin value is set to $f_\mathrm{norm} \times \chi_\mathrm{sp}$, where $\chi_\mathrm{sp}$ is the species number fraction.
+
+### Model B Values
+
+| Quantity | Value |
+|----------|-------|
+| $\dot{M}$ | $10^{-6}\ M_\odot\ \mathrm{yr}^{-1} = 6.30 \times 10^{19}\ \mathrm{g\ s}^{-1}$ |
+| $\Phi$ | $1.60 \times 10^{20}\ \mathrm{cm}^{-2}\ \mathrm{s}^{-1}$ |
+| $n_\mathrm{jet}$ | $1.24 \times 10^{10}\ \mathrm{cm}^{-3}$ |
+| $n_\mathrm{cloud}$ | $10^{11}\ \mathrm{cm}^{-3}$ |
+| $f_\mathrm{norm}$ | $0.1245$ |
+
+### $\Delta M / M_0$ Tracking
+
+Famiano's x-axis is the **cumulative fractional mass** of jet material deposited into the entire BLR:
+
+$$\frac{\Delta M}{M_0}(t) = \frac{\dot{M} \cdot t}{M_0}$$
+
+with $M_0 = 10^6\ M_\odot$ (total BLR mass). This gives $\Delta M / M_0 \sim 10^{-8}$ at $t \sim 10^4$ s for Model B. Note: this is **not** relative to a single clump mass.
+
+---
 
 ## Jet-Cloud Reaction Mechanisms
 
-Jet material introduced in the cloud was assumed to be well-mixed following thermalization. The particles in the cloud are assumed to be homogenously distributed and have the same energy per nucleon initially.
+Jet material introduced into the cloud is assumed to be well-mixed following thermalization. Cloud particles are homogeneously distributed and have the same energy per nucleon initially.
 
+$$\dot{M} = \dot{m}_\mathrm{jet} \times \Omega$$
 
-Material is introduced into the cloud at a preset rate.
+where $\dot{M}$ is the cloud mass rate of change, $\dot{m}_\mathrm{jet}$ is the jet mass outflow rate, and $\Omega$ is the jet cross-sectional area intersecting with the cloud. $\dot{M}$ ranges from $\sim 10^{-6}\ M_\odot\ \mathrm{yr}^{-1}$ (BLR) to $\sim 10\ M_\odot\ \mathrm{yr}^{-1}$ (knot).
 
-Reaction within the jet and between jet and cloud were treated separately because they do not follow the Boltzmann energy distribution. 
+Reactions within the jet and between jet and cloud are treated separately because they do not follow the Boltzmann energy distribution.
 
-$$\dot{M} = \dot{m}_{jet} \times \Omega$$
+### Reaction Groups
 
+- **Group 1:** Jet particles reacting with dominant cloud species (p, $^4$He targets). Includes p+p, p+$^4$He, and $^4$He+$^4$He channels. Product energy distributions require DWBA calculations. *Currently disabled pending DWBA output.*
+- **Group 2:** Jet particles reacting with heavier cloud species (Li, Be, B, C, N, O targets). Binary kinematics allow Q-value based cross sections. *Currently enabled; 46 channels loaded.*
 
-where $\dot{M}$ is the mass rate of change of the cloud, $\dot{m}\_{jet}$ is the mass outflow rate from the jet, and $\Omega$ is the jet's cross sectional area intersecting with the cloud. The value of $\dot{M}$ can range anywhere from $10^{-6} M\_{\odot}/yr$ in the BLR region to $10 M\_{\odot}/yr$ in the knot region. This value is assumed to be constant throughout the simulation. The simulation runs until the cloud increases in size (volume, density or both) to several times its original size.
+### Secondary Cascade
+
+Products with $A < 8$ (n, d, t, $^3$He, $^4$He, $^6$Li, $^7$Li) can in principle re-enter the cascade as secondary non-thermal projectiles. Currently, `update_spectra=False` — the jet spectrum is reset to steady-state injection values each step, so secondaries do not re-enter. This is a planned enhancement:
+
+- Group-2 secondaries: implementable via two-body kinematics (no DWBA needed)
+- Group-1 secondaries: requires DWBA product energy distributions
+
+---
 
 ## Reaction Network
 
-The vector of the abundance change, $\Delta$, is given by
+The implicit Euler update for the abundance vector is:
 
-$$\left(\frac{\tilde{I}}{h} - \tilde{J}\right) \cdot \Delta = f[Y(t)]$$
+$$\left(\frac{\tilde{I}}{h} - \tilde{J}\right) \cdot \Delta = f[\mathbf{Y}(t)]$$
 
-where $\tilde{J}$ is the Jacobian matrix corresponding to the rate of change of $f(Y_i)$ with respect to $Y_j$. That is,
+where $\tilde{J}$ is the Jacobian matrix:
 
 $$\tilde{J} = J_{i,j} = \frac{\partial f(Y_i)}{\partial Y_j}$$
 
-## Time step Scheme
+The current implementation uses **explicit Euler** (adequate for Model B, non-stiff). The Jacobian module (`core/jacobian.py`) supports implicit integration for Model A (stiff thermonuclear network).
 
-The time step (h) at point n+1 is calculated as,
+### Reaction Threshold
 
-$$h_{n+1} = \epsilon h_n min(\frac{Y_i^{n+1}}{\Delta_i})$$
+For endothermic reactions ($Q < 0$), the lab-frame threshold is:
+
+$$E_\mathrm{thr} \approx -Q \left(1 + \frac{m_a}{m_A}\right)$$
+
+computed at load time. Reactions are suppressed below threshold.
+
+### CM-Frame Energy Conversion
+
+Cross section data files with CM-frame energies are automatically converted to lab-frame at load time using the relativistic invariant-mass relation:
+
+$$T_\mathrm{lab} = \frac{s - m_a^2 - m_A^2}{2 m_A} - m_a, \quad s = (T_\mathrm{cm} + m_a + m_A)^2$$
+
+Total cross sections are Lorentz invariant — only the energy axis transforms.
+
+---
+
+## Time-Step Scheme
+
+The adaptive timestep (Famiano eq. 4) is:
+
+$$h_{n+1} = \epsilon \cdot h_n \cdot \min_i \left(\frac{Y_i^{n+1}}{\Delta_i}\right)$$
+
+where $\Delta_i = Y_i^{n+1} - Y_i^n$ is the abundance change per step and $\epsilon = 0.01$.
+
+This simplifies to $h_{n+1} = \epsilon \cdot \tau_\mathrm{min}$ where $\tau_\mathrm{min} = \min_i(Y_i / |\dot{Y}_i|)$ is the shortest depletion timescale. A `max_growth = 5` cap prevents sudden jumps.
+
+### Current Run Parameters (Model B)
+
+| Parameter | Value |
+|-----------|-------|
+| $t_0$ | 0 s |
+| $t_\mathrm{max}$ | $10^5$ s |
+| $h_\mathrm{min}$ | $10^{-2}$ s |
+| $h_\mathrm{max}$ | $10^4$ s |
+| $\epsilon$ | 0.01 |
+| max steps | 100,000 |
+
+---
 
 ## Survival Fractions
 
-For species i in the jet with initial energy $E_0$, the fraction of particles surviving to energy E (via thermalization) is given by,
+For species $i$ in the jet with initial energy $E_0$, the fraction of particles surviving to energy $E$ is:
 
-$$S_i(E,E_0) = 1 - \int_E^{E_0} S(E') \frac{\sum_m N_m \sigma_m(E')}{\epsilon_i(E')} dE'$$
+$$S_i(E, E_0) = 1 - \int_E^{E_0} S(E') \frac{\sum_m N_m \sigma_m(E')}{\epsilon_i(E')} \, dE'$$
 
-The surviving fraction was normalized to the product energy. If a particle has an initial energy $E_1 < E_0$, the survival fraction of this particle to energy $E_2 < E_1$ is,
+If a particle has initial energy $E_1 < E_0$, its survival fraction to $E_2 < E_1$ is:
 
-$$S(E_2,E_1) = \frac{S_i(E_2,E_0)}{S_i(E_1,E_0)}$$
+$$S(E_2, E_1) = \frac{S_i(E_2, E_0)}{S_i(E_1, E_0)}$$
+
+---
 
 ## Yields
 
-The yield of particle k from all interactions between jet and cloud (including reactions from reaction products) that slow down to an energy $E_1 < E < E_2$ from an initial energy $E_0$ is,
+The yield of particle $k$ from all jet–cloud interactions for projectiles slowing from $E_0$ through the range $E_1 < E < E_2$ is:
 
-$$y_k = N_i(E_0) \int_{E_1}^{E_2} S(E,E_0) \frac{\sum_m \sigma_m(E)}{\epsilon_i(E)} dE$$
+$$y_k = N_i(E_0) \int_{E_1}^{E_2} S(E, E_0) \frac{\sum_m \sigma_m(E)}{\epsilon_i(E)} \, dE$$
 
-The above equation also accounts for loss of particles (with the survival fraction quantity) due to any previous reactions. This is the continuous form of the yield. It can be discretized using
+The discretized survival fraction increment is:
 
-$$\delta S_{ji} = S_j(E_i,E_0) - S_j(E_{i-1},E_0)$$
+$$\delta S_{ji} = S_j(E_i, E_0) - S_j(E_{i-1}, E_0), \quad \delta S_{j1} = S_j(E_1, E_0)$$
 
-Since lowest energy bin is $E_1$, then $\delta S_{j1} = S_j(E_1,E_0)$ by definition. The destruction fraction is given by,
+The destruction fraction is:
 
-$$\zeta_{ik} = \frac{\sigma_{ik}N_i}{\sum_m \sigma_{mk}N_m}$$
+$$\zeta_{ik} = \frac{\sigma_{ik} N_i}{\sum_m \sigma_{mk} N_m}$$
 
-Therefore, the discretized yields are given by,
+The discretized yield tensor is:
 
-$$y_{pq}^{in} = \phi_{pq}^{ik}\zeta_{ik}\frac{\delta S_{ik}}{S_{in}}$$
-
-## Planned Code Module Mapping
-
-In this section, we outline the mapping of the different physical components of the simulation to specific code modules. Each module will handle a specific task, such as managing the thermonuclear network, performing jet–cloud interactions, or updating cloud properties. This structure ensures modularity, readability, and ease of future updates or modifications.
-
-### Core Modules
-
-#### **1. `network/` - Thermonuclear Network**
-
-This module handles the implementation of thermonuclear reactions, including the calculation of reaction rates and the time evolution of abundances.
-
-##### **Functions:**
-- `load_reaction_rates()`: Loads thermonuclear reaction rates from databases (e.g., NACRE, NNDC).
-- `compute_reaction_rate()`: Computes the reaction rate \( k(T) \) at a given temperature.
-- `update_abundances()`: Updates the abundances of species based on the thermonuclear network.
-- `solve_ode()`: Solves the system of ordinary differential equations for the abundance evolution using the Euler method.
-
-##### **Files:**
-- `rates.py`: Contains functions for loading and interpolating thermonuclear rates.
-- `jacobian.py`: Computes the Jacobian matrix for the ODE system.
-- `solver.py`: Implements the numerical solver for the network equations.
+$$y_{pq}^{in} = \phi_{pq}^{ik} \, \zeta_{ik} \, \frac{\delta S_{ik}}{S_{in}}$$
 
 ---
 
-#### **2. `jet_cloud/` - Jet-Cloud Interaction**
+## Data Inputs
 
-This module models the interaction between the relativistic jet and the surrounding cloud. It handles the jet energy distribution, survival fraction calculations, and jet-induced reactions.
+### Cross-Section Data — `data/CrossSections/`
 
-##### **Functions:**
-- `load_jet_data()`: Loads data on jet composition, energy spectrum, and particle densities.
-- `compute_survival_fraction()`: Calculates the survival fraction \( S(E, E_0) \) for jet particles.
-- `compute_jet_yield()`: Computes the yield of particles produced by the jet-cloud interactions.
-- `update_jet_cloud_reactions()`: Updates the reaction rates for jet-induced reactions, and calculates the effect on cloud abundance.
+Cross sections are stored as CSV files with the naming convention:
 
-##### **Files:**
-- `energy_binning.py`: Handles energy binning of jet particles and calculates energy distributions.
-- `survival_fraction.py`: Computes survival fractions based on jet particle energy and cloud medium.
-- `yields.py`: Calculates particle yields from jet–cloud reactions.
+```
+{target}_{projectile}{products}_{dataset_index}.csv
+```
 
----
+Example: `7Li_pa_4He_4.csv` = $^7$Li(p,$\alpha$)$^4$He, dataset 4.
 
-#### **3. `cloud/` - Cloud Properties and Evolution**
+| Directory | Contents |
+|-----------|----------|
+| `Group1/` | p+p, p+$^4$He, $^4$He+$^4$He channels (DWBA required) |
+| `Group2/` | Heavy-target channels: Li, Be, B, C, N, O (46 channels loaded) |
 
-This module tracks the properties of the cloud, including its density, temperature, and volume evolution due to jet interactions. It also manages the updating of these properties at each timestep.
+Supported energy column names: `E_MeV`, `E_keV`, `E_cm`, `E_cm_kev`, `E_min`/`E_max` (bin edges → midpoints used).
 
-##### **Functions:**
-- `update_cloud_state()`: Updates the state of the cloud (density, volume, temperature) based on the interaction with the jet.
-- `compute_mass_change()`: Computes the change in the cloud's mass due to jet deposition.
-- `compute_volume_change()`: Calculates the change in cloud volume as mass is added from the jet.
+Supported cross-section column names and units: `sigma_mb` (mb), `sigma_b` (b), `sigma_ub` (μb), `sigma_nb` (nb), `sigma_cm_B` (barn, CM-frame label, treated as mb×10³ → converted).
 
-##### **Files:**
-- `geometry.py`: Handles cloud geometry and the evolution of cloud volume and density.
-- `state.py`: Manages cloud state, including temperature and initial abundance conditions.
+CM-frame energy files are automatically converted to lab frame on load if projectile and target species are parseable from the filename.
 
----
+### Mass Table — `data/mass_table.json`
 
-#### **4. `simulation/` - Simulation Control and Main Loop**
+Atomic masses in unified atomic mass units (u), AME 2020. Used for Q-value computation and CM→lab energy conversion. The built-in table covers 32 nuclides (n through $^{21}$Ne); an external JSON file can extend it.
 
-This module controls the overall simulation process, including initializing the model, running the timestep loop, and updating the cloud and jet states.
+### Configuration Files — `config/`
 
-##### **Functions:**
-- `initialize_simulation()`: Initializes the simulation by setting up initial conditions (cloud properties, jet parameters).
-- `run_simulation()`: Executes the main simulation loop, calling relevant modules for reaction rate calculation, jet–cloud interaction, and cloud state updates.
-- `save_output()`: Saves output data (abundances, reaction rates, cloud properties) to the specified output directory.
-- `time_step_control()`: Calculates the adaptive timestep \( h \) based on error tolerance.
-
-##### **Files:**
-- `main_loop.py`: Runs the main loop of the simulation, updating the system at each timestep.
-- `output.py`: Handles output file generation, including saving data to CSV, JSON, or HDF5 formats.
+| File | Contents |
+|------|----------|
+| `cloud.json` | Cloud target properties (density, temperature, composition, geometry, BLR mass) |
+| `jet.json` | Jet species, spectrum type, injection energy, mass rate |
+| `species.json` | Nuclear data ($A$, $Z$) for all species in the network |
+| `run.json` | Solver settings (timestep bounds, $t_\mathrm{max}$), energy grid, output paths |
 
 ---
 
-#### **5. `utils/` - Utility Functions**
+## Output Quantities
 
-This module contains utility functions that are used across multiple parts of the simulation but are not specific to one core component.
-
-##### **Functions:**
-- `load_data_file()`: Loads any external data files (e.g., reaction rate tables, jet composition files).
-- `interpolate_data()`: Interpolates reaction rates or cross-sections as a function of temperature or energy.
-- `plot_results()`: Generates plots for abundance evolution, reaction rates, etc.
-
-##### **Files:**
-- `data_loader.py`: Handles reading of data files (e.g., CSV, JSON).
-- `plotter.py`: Handles data visualization and plotting.
-- `utilities.py`: Miscellaneous helper functions for tasks like interpolation and logging.
+| File | Contents |
+|------|----------|
+| `outputs/abundance_history.csv` | Step, $t$ (s), $\Delta M/M_0$, $Y_i(t)$ for all species at every `write_every_n_steps` interval |
+| `outputs/final_state.json` | Final $t$, step count, $\Delta M/M_0$, all $Y_i$, mass fractions, stop reason |
+| `outputs/famiano_abundance_evolution.png` | Log–log abundance evolution plot; bottom x-axis = time [s], top x-axis = $\Delta M/M_0$, y-axis = $Y_i$ |
 
 ---
 
-### Data Inputs and Configuration Files
+## Code Module Reference
 
-#### **1. `data/` - Data Storage and Configuration**
+The simulation is organized into the following directories and files.
 
-This directory holds all external data files (e.g., reaction rate tables, jet data files) and configuration files for the simulation.
+### `core/` — Physics Engine
 
-##### **Files:**
-- `nacre_1999.csv`: Thermonuclear reaction rate data from NACRE (1999).
-- `jet_composition.txt`: Jet composition and energy distribution data (e.g., proton and helium abundances).
-- `jet_cloud_cross_sections.dat`: Cross-section data for jet–cloud reactions (from NNDC or EXFOR).
-- `cloud_conditions.json`: Cloud physical properties (e.g., density, temperature, initial abundances).
+| File | Responsibility |
+|------|----------------|
+| `state.py` | Data containers: `CloudState`, `CascadeState`, `SolverState`, `NetworkState`, `SpeciesData`, `ProjectileSpectrum` |
+| `reactions.py` | `CrossSectionTable`, `Reaction`, `ReactionLibrary`: load, parse, and interpolate cross-section data; CM→lab conversion; threshold computation |
+| `cascade.py` | `run_cascade_step()`: computes $dY/dt$ for all cloud species from jet–cloud reactions using the loaded reaction library |
+| `timestep.py` | `compute_next_dt()`, `estimate_initial_dt()`, `euler_increment()`: Famiano eq. (4) adaptive timestep |
+| `stopping.py` | Stopping power $\epsilon_i(E)$ via fast/slow ion formulae (Ginzburg & Syrovatskii 1964) |
+| `survival.py` | Survival fraction $S_i(E, E_0)$ integration |
+| `grids.py` | `make_energy_grid()`: linear or logarithmic energy bin construction |
+| `jacobian.py` | Jacobian matrix $J_{ij}$ for implicit Euler integration (used for Model A) |
+| `io.py` | Output helpers: CSV row writing, JSON serialization |
+
+### `scripts/` — Entry Points
+
+| File | Responsibility |
+|------|----------------|
+| `run_famiano.py` | Main driver: load config, build initial state, expand cloud with reaction products, compute jet normalization, run adaptive Euler loop, write CSV and JSON outputs |
+| `plot_famiano.py` | Post-processing: read `abundance_history.csv`, produce single-panel log–log Famiano-style abundance evolution figure |
+
+### `utils/` — Shared Utilities
+
+**`utils/utils.py`** provides:
+
+- `beta(E, A)`, `lorentz_factor(beta)`: relativistic kinematics helpers
+- `canonical_species_name(species)`: normalizes species name strings (e.g., `"he4"` → `"4He"`)
+- `load_mass_table(path)`: loads AME 2020 atomic masses from JSON; falls back to 32-nuclide built-in table
+- `q_value_mev(reactants_stoich, products_stoich)`: Q-value from atomic masses
+- `reaction_threshold_lab_mev(projectile, target, q_mev)`: non-relativistic lab-frame threshold for endothermic reactions
+- `cm_energy_to_lab_mev(t_cm_mev, m_projectile_mev, m_target_mev)`: relativistic CM→lab energy conversion using Mandelstam $s$
+- `cm_to_lab_energy_mev(t_cm_mev, projectile, target)`: species-name wrapper for the above
+
+### `nonthermal/` — Legacy Survival Fraction Code
+
+`nonthermal/survival.py`: earlier standalone implementation of the survival fraction integral. Superseded by `core/survival.py` but retained for reference.
+
+### `config/` — Simulation Configuration
+
+See [Data Inputs — Configuration Files](#configuration-files----config) above.
+
+### `data/` — Cross Sections and Mass Data
+
+See [Data Inputs — Cross-Section Data](#cross-section-data----datacrosssections) above.
+
+### `outputs/` — Generated Outputs
+
+Runtime output directory (not tracked in version control except `.gitkeep`). See [Output Quantities](#output-quantities) above.
 
 ---
 
-#### **2. `config/` - Simulation Settings**
+## Implementation Status
 
-This directory contains configuration files that specify the simulation parameters, such as cloud parameters, jet properties, and integration settings.
-
-##### **Files:**
-- `simulation_config.json`: Contains simulation-wide settings such as time range, initial conditions, and numerical solver parameters.
-- `reaction_config.yaml`: Lists the reactions to be included in the network and associated uncertainties.
-
----
-
-### Summary of Module Responsibilities
-
-| Module              | Responsibilities                                                                 |
-|---------------------|---------------------------------------------------------------------------------|
-| `network/`          | Manages the thermonuclear reaction network, calculates rates, and updates abundances. |
-| `jet_cloud/`        | Models the interaction between the jet and cloud, calculates yields and survival fractions. |
-| `cloud/`            | Tracks and updates the physical properties of the cloud (density, temperature, volume). |
-| `simulation/`       | Controls the overall simulation process, including the main loop, time-stepping, and saving outputs. |
-| `utils/`            | Provides utility functions such as data loading, interpolation, and plotting. |
-| `data/`             | Stores external data files (reaction rates, jet data, cross-sections). |
-| `config/`           | Holds configuration files for simulation settings. |
-
----
-
-By clearly mapping each physical process to a specific module, this structure ensures that the code is organized, modular, and scalable. Each module can be independently tested and updated as needed, making the simulation more flexible and maintainable.
-
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Group-2 non-thermal reactions (heavy targets) | **Done** | 46 channels; CM→lab conversion; threshold enforcement |
+| Adaptive explicit Euler timestep | **Done** | Famiano eq. (4); $h_\mathrm{min}$/$h_\mathrm{max}$ bounds; max growth cap |
+| Jet normalization ($f_\mathrm{norm}$) | **Done** | Physical $n_\mathrm{jet}/n_\mathrm{cloud}$ from mass rate and cloud geometry |
+| $\Delta M / M_0$ tracking | **Done** | Relative to total BLR mass $M_0 = 10^6\ M_\odot$ |
+| Cloud species expansion | **Done** | All reaction products pre-seeded at $Y=0$ before evolution |
+| CM→lab energy conversion | **Done** | Relativistic; auto-applied on load for CM-frame data files |
+| Reaction threshold enforcement | **Done** | Endothermic reactions suppressed below $E_\mathrm{thr}$ |
+| Q-value computation | **Done** | AME 2020 masses; 32 nuclides built-in |
+| Famiano-style abundance plot | **Done** | Log–log; time [s] bottom axis; $\Delta M/M_0$ top axis |
+| Group-1 reactions (p+p, p+$^4$He) | **Pending** | Requires DWBA product energy distributions |
+| Secondary non-thermal cascade | **Pending** | Group-2 secondaries: two-body kinematics sufficient; Group-1: needs DWBA |
+| Implicit Euler integration | **Pending** | Jacobian implemented; needed for stiff Model A thermonuclear network |
+| Thermonuclear reactions (Model A) | **Pending** | `SimpleThermoNuclearOperator` stub exists; rates not connected |
+| Cloud geometry update per timestep | **Pending** | Cloud volume/density assumed constant (adequate for Model B) |
+| Missing/incomplete cross-section files | **Pending** | Several files lack energy columns or have arbitrary-unit $\sigma$; listed in loader warnings |
