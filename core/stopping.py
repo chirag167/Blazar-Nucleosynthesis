@@ -115,107 +115,95 @@ def energy_loss_rate(
     eps: float = 1e-2,
 ) -> np.ndarray:
     """
-    Continuous energy-loss rate dE/dt [MeV/s].
+    Continuous energy-loss rate dE/dt [MeV/s] for a fast ion in a PLASMA.
+
+    Uses the relativistic Bethe-Bloch formula with the plasma frequency
+    cutoff replacing the mean excitation potential I → e_0 = ħω_p
+    (Ginzburg & Syrovatskii, "The Origin of Cosmic Rays", eqs. 7.6–7.7):
+
+        dE/dt = v × (K/N_A) × n_e × Z_eff²/β²
+                × [0.5 ln(2 m_e β² γ² T_max / e_0²) − β²]
+
+    where
+        e_0 = ħω_p = 3.71×10⁻¹¹ √n_e  eV   (plasma frequency cutoff)
+        T_max = 2 m_e β² γ²                   (heavy-projectile limit, M ≫ m_e)
+        K/N_A = 4π r_e² m_e c² = 5.099×10⁻²⁵ MeV cm²
+
+    For v < v₀ = c/137 the Bohr effective charge is applied:
+        Z_eff = Z (v/v₀)^(1/3)   (G&S eq. 7.11)
+
+    The heavy-projectile T_max approximation (= 2 m_e β² γ²) is valid for
+    E ≪ (M/m_e) M c² ≈ 1.72 × 10⁶ MeV for protons, covering our full
+    0–400 MeV injection energy range.
 
     Parameters
     ----------
     A_cl, X_cl : arrays
-        Cloud mass numbers and composition fractions.
+        Cloud mass numbers and composition fractions (unused in plasma formula
+        but kept for interface consistency).
     X_ion : float
-        Ionization fraction of the cloud.
+        Ionization fraction of the cloud (unused here; weighting done in
+        ``stopping_power()``).
     Z_proj, A_proj : int
         Projectile charge and mass number.
     E : array or float
         Projectile kinetic energy [MeV].
     n_e : float
-        Electron number density [cm^-3].
+        Free electron number density [cm⁻³].
     T_e : float
-        Electron temperature. Included for interface stability.
+        Electron temperature [K]. Retained for interface stability.
     eps : float
-        Regime separator used in the existing draft.
+        Unused; retained for interface compatibility.
 
     Returns
     -------
     np.ndarray
-        Positive magnitude of energy loss rate, dE/dt [MeV/s].
-
-    Notes
-    -----
-    This follows the structure of your current draft, which splits the energy
-    loss into multiple regimes and then converts to stopping power using
-    epsilon = (1/v) dE/dt. :contentReference[oaicite:7]{index=7} :contentReference[oaicite:8]{index=8}
+        Positive magnitude of plasma energy-loss rate dE/dt [MeV/s].
     """
     E = np.asarray(E, dtype=float)
     E = np.maximum(E, 1e-300)
 
-    beta_arr = beta(E, A_proj)
-    beta_arr = np.clip(beta_arr, 1e-30, 1.0 - 1e-15)
+    M_proj = A_proj * AMU_TO_MEV          # projectile rest mass [MeV/c²]
+    gamma_arr = 1.0 + E / M_proj
+    beta_arr = np.sqrt(np.maximum(1.0 - 1.0 / gamma_arr**2, 1e-30))
+    beta2 = beta_arr**2
 
-    A_arr = np.asarray(A_cl, dtype=float)
-    X_arr = np.asarray(X_cl, dtype=float)
+    # --- Bohr effective charge (G&S eq. 7.11) ---
+    # For v < v₀ = αc = c/137 the ion is not fully stripped; Z_eff < Z.
+    beta_0 = 1.0 / 137.0
+    Z_eff_sq = np.where(
+        beta_arr < beta_0,
+        float(Z_proj)**2 * (beta_arr / beta_0) ** (2.0 / 3.0),
+        float(Z_proj)**2,
+    )
 
-    A_eff = np.sum(A_arr * X_arr)
+    # --- Plasma frequency cutoff energy (G&S eq. 7.7) ---
+    # e_0 = ħω_p = 3.71×10⁻¹¹ √n_e  eV  →  MeV
+    e_0 = np.maximum(3.71e-11 * np.sqrt(n_e) * 1e-6, 1e-30)   # MeV
 
-    # Keep this tied to your draft structure
-    M = A_eff * AMU_TO_MEV  # MeV/c^2
-    kappa = 7.62e-9
-    E_c = 3.7e-11 * np.sqrt(n_e) * 1e-6  # MeV
+    # --- Maximum energy transfer (heavy-projectile limit) ---
+    T_max = 2.0 * m_e * beta2 * gamma_arr**2                    # MeV
 
-    dEdt = np.zeros_like(E, dtype=float)
+    # --- Bethe-Bloch logarithmic term ---
+    arg = np.maximum(
+        2.0 * m_e * beta2 * gamma_arr**2 * T_max / e_0**2,
+        1.0 + 1e-15,
+    )
+    log_term = 0.5 * np.log(arg) - beta2
+    log_term = np.maximum(log_term, 0.0)
 
-    # Draft-style regime masks
-    mask1 = E < eps * (M / m_e) * M
-    mask2 = (E >= eps * (M / m_e) * M) & (E < (1.0 / eps) * M)
-    mask3 = (E >= (1.0 / eps) * M) & (E < (1.0 / eps) * (M / m_e) * M)
-    mask4 = E >= (1.0 / eps) * (M / m_e) * M
+    # --- dE/dx for plasma [MeV/cm] ---
+    # K/N_A = 4π r_e² m_e c² = 0.307 MeV cm²/g / (6.022×10²³ mol⁻¹)
+    K_over_NA = 0.307 / 6.022e23          # MeV cm²
+    dEdx = K_over_NA * Z_eff_sq * n_e / np.maximum(beta2, 1e-30) * log_term
 
-    # Regime 1
-    if np.any(mask1):
-        dEdt[mask1] = (
-            kappa
-            * Z_proj**2
-            * n_e
-            * (1.0 / beta_arr[mask1])
-            * (
-                22.2
-                + 4.0 * np.log(E[mask1] / m_e)
-                + 2.0 * np.log(beta_arr[mask1] ** 2)
-                - 2.0 * beta_arr[mask1] ** 2
-            )
-        ) * 1e-6
+    # --- dE/dt = v × dE/dx ---
+    c_cm_s = c * 1e2                      # speed of light [cm/s]
+    v = beta_arr * c_cm_s
+    dEdt = dEdx * v
 
-    # Regime 2
-    if np.any(mask2):
-        dEdt[mask2] = (
-            kappa
-            * Z_proj**2
-            * n_e
-            * np.sqrt(2.0 * M / E_c)
-            * (11.8 + np.log(E[mask2] / M))
-        ) * 1e-6
-
-    # Regime 3
-    if np.any(mask3):
-        dEdt[mask3] = (
-            kappa
-            * Z_proj**2
-            * n_e
-            * (4.0 * np.log(E[mask3] / M) + 20.2)
-        ) * 1e-6
-
-    # Regime 4
-    if np.any(mask4):
-        dEdt[mask4] = (
-            kappa
-            * Z_proj**2
-            * n_e
-            * (3.0 * np.log(E[mask4] / M) + np.log(M / m_e) + 19.5)
-        ) * 1e-6
-
-    # Avoid negative or pathological values from logs
     dEdt = np.nan_to_num(dEdt, nan=0.0, posinf=0.0, neginf=0.0)
     dEdt = np.maximum(dEdt, 0.0)
-
     return dEdt
 
 
@@ -291,14 +279,23 @@ def _bethe_bloch_neutral(
     A_mean = np.sum(X_arr * A_arr)  # weighted mean A
     rho = n_cl_total * A_mean * AMU_G  # g/cm^3
 
-    # T_max ~ 2 m_e c^2 beta^2 gamma^2 (heavy projectile limit)
+    # --- Bohr effective charge (G&S eq. 7.11) ---
+    # For v < v₀ = αc = c/137 the ion has not yet shed bound electrons; Z_eff < Z.
+    beta_0 = 1.0 / 137.0
+    Z_eff_sq = np.where(
+        beta_arr < beta_0,
+        float(Z_proj)**2 * (beta_arr / beta_0) ** (2.0 / 3.0),
+        float(Z_proj)**2,
+    )
+
+    # T_max ~ 2 m_e c^2 beta^2 gamma^2 (heavy projectile limit, M ≫ m_e)
     T_max = 2.0 * m_e * beta2 * gamma_arr**2  # MeV
 
     arg = np.maximum(2.0 * m_e * beta2 * gamma_arr**2 * T_max / I_mean_MeV**2, 1.0 + 1e-15)
     BB = 0.5 * np.log(arg) - beta2
     BB = np.maximum(BB, 0.0)
 
-    dEdx = K * float(Z_proj)**2 * ZoverA * rho * (1.0 / np.maximum(beta2, 1e-30)) * BB
+    dEdx = K * Z_eff_sq * ZoverA * rho * (1.0 / np.maximum(beta2, 1e-30)) * BB
     return np.maximum(dEdx, 0.0)
 
 
