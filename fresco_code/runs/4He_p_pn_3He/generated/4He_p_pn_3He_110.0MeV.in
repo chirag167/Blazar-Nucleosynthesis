@@ -1,0 +1,16 @@
+Test reaction with generated potential
+NAMELIST
+&FRESCO hcm=0.04 rmatch=50.0 jtmin=0.0 jtmax=150.0 elab=110 /
+
+&PARTITION namep='p' massp=1 zp=1 namet='4He' masst=4 zt=2 qval=0.0 nex=1 /
+&STATES jp=0.5 bandp=1 ep=0.0 jt=0 bandt=1 et=0.0 cpot=1 /
+&PARTITION /
+
+&POT kp=1 type=0 p1=4 p2=2 p3=4.38722 /
+&POT kp=1 type=1 p1=23.4094 p2=1.04851 p3=0.677205 p4=10.583 p5=1.04851 p6=0.677205 /
+&POT kp=1 type=2 p4=1.20066 p5=1.31724 p6=0.520782 /
+&POT kp=1 type=3 p1=3.69614 p2=0.777816 p3=0.59 /
+&POT /
+
+&OVERLAP /
+&COUPLING /
