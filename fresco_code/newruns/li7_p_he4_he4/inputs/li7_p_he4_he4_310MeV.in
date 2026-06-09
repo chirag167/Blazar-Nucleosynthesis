@@ -1,0 +1,35 @@
+7Li(p,4He)4He  E=310 MeV  Q=+17.346  [li7_p_he4_he4]
+NAMELIST
+ &FRESCO
+   hcm=0.05 rmatch=30.0 rintp=0.25 hnl=0.10 rnl=100.0
+   jtmin=0.0 jtmax=80 absend=-1.0
+   thmin=0.0 thmax=180.0 thinc=1.0
+   it0=1 iter=1
+   rela='a'
+   chans=1 smats=2 xstabl=1
+   pel=1 exl=1 lab=1 lin=1
+   elab=310.0
+  /
+ &PARTITION namep='p' massp=1 zp=1 namet='7Li' masst=7 zt=3 qval=0.000 nex=1 /
+   &STATES jp=0.5 ptyp=1 ep=0.0 cpot=1 jt=1.5 ptyt=-1 et=0.0 /
+ &PARTITION namep='4He' massp=4 zp=2 namet='4He' masst=4 zt=2 qval=17.346 nex=1 /
+   &STATES jp=0.0 ptyp=1 ep=0.0 cpot=2 jt=0.0 ptyt=1 et=0.0 /
+ &partition /
+ &POT kp=1 type=0 shape=0 p(1:3)=1 7 1.300 /
+ &POT kp=1 type=1 shape=0 p(1:6)=50.000 1.200 0.600 0.000 1.200 0.600 /
+ &POT kp=1 type=2 shape=0 p(1:6)=0.0 0.0 0.0 8.000 1.300 0.500 /
+ &POT kp=1 type=3 shape=0 p(1:3)=5.500 1.000 0.500 /
+ &POT kp=2 type=0 shape=0 p(1:3)=4 4 1.400 /
+ &POT kp=2 type=1 shape=0 p(1:6)=120.000 1.400 0.550 15.000 1.400 0.550 /
+ &POT kp=3 type=1 shape=0 p(1:3)=50.000 1.250 0.650 /
+ &POT kp=3 type=3 shape=0 p(1:3)=6.000 1.250 0.650 /
+ &POT kp=4 type=1 shape=0 p(1:3)=50.000 1.250 0.650 /
+ &POT kp=4 type=3 shape=0 p(1:3)=6.000 1.250 0.650 /
+ &pot /
+ &OVERLAP kn1=1 ic1=1 ic2=2 in=2 kind=0 nn=1 l=0 sn=0.5 j=0.5 kbpot=3 be=19.8140 isc=1 ipc=0 /
+ &OVERLAP kn1=2 ic1=2 ic2=1 in=1 kind=0 nn=2 l=1 sn=0.5 j=1.5 kbpot=4 be=2.4670 isc=1 ipc=0 /
+ &overlap /
+ &COUPLING icto=2 icfrom=1 kind=7 ip1=0 ip2=-1 ip3=5 /
+   &CFP in=2 ib=1 ia=1 kn=2 a=1.000 /
+   &CFP in=1 ib=1 ia=1 kn=1 a=1.000 /
+ &coupling /
