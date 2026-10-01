@@ -125,7 +125,9 @@ def compute_survival_table(
     target_densities: np.ndarray,
     E_edges: np.ndarray,
     initial_bin: Optional[int] = None,
-) -> np.ndarray:
+    max_path_cm: Optional[float] = None,
+    return_exited_flag: bool = False,
+):
     """
     Compute the cumulative discrete survival fraction S_k for a projectile
     injected into bin `initial_bin`.
@@ -144,11 +146,24 @@ def compute_survival_table(
         Energy bin edges.
     initial_bin : int, optional
         Bin index of the injected projectile energy. Defaults to the top bin.
+    max_path_cm : float, optional
+        Maximum physical path length [cm] the projectile traverses in the
+        medium.  When set the integral is truncated once the cumulative path
+        dx = dE/epsilon reaches this value; the partial last bin is scaled
+        accordingly.  Pass the cloud length for a thin-target simulation so
+        that the yield correctly reflects only the cloud traversal rather than
+        the particle's full stopping range.
+    return_exited_flag : bool, optional
+        If True, return ``(S, particle_exited)`` instead of just ``S``.
+        ``particle_exited`` is True when the particle reached ``max_path_cm``
+        before reaching energy bin 0.
 
     Returns
     -------
     np.ndarray, shape (n_bins,)
         S_k = fraction surviving down to and through bin k.
+    (only when return_exited_flag=True) bool
+        True if the particle exited the medium before thermalising.
 
     Convention
     ----------
@@ -180,12 +195,40 @@ def compute_survival_table(
     # Using the discrete analog:
     #   DeltaS_k ~ S_k * (Lambda_k / epsilon_k) * dE_k
     #   S_{k-1} = S_k - DeltaS_k
+    #
+    # When max_path_cm is given, scale each bin's contribution by the fraction
+    # of the bin's path length that lies within the cloud; stop once the
+    # cumulative path exceeds max_path_cm.  This implements the thin-target
+    # approximation for clouds whose thickness is much less than the stopping
+    # range (L_cloud << L_stop).
+    path_traversed = 0.0
+    particle_exited = False
+
     for k in range(initial_bin, 0, -1):
         eps_k = max(epsilon_bin[k], 1e-300)
-        deltaS_k = S[k] * (Lambda[k] / eps_k) * dE[k]
+        dx_k = float(dE[k]) / eps_k  # path length through this full bin [cm]
+
+        if max_path_cm is not None and path_traversed >= max_path_cm:
+            # Particle already used up its path budget — carry S forward.
+            S[k - 1] = S[k]
+            particle_exited = True
+            continue
+
+        if max_path_cm is not None:
+            remaining = max_path_cm - path_traversed
+            frac = min(1.0, remaining / dx_k)
+            path_traversed += dx_k * frac
+            if frac < 1.0:
+                particle_exited = True
+        else:
+            frac = 1.0
+
+        deltaS_k = S[k] * (Lambda[k] / eps_k) * dE[k] * frac
         deltaS_k = np.clip(deltaS_k, 0.0, S[k])
         S[k - 1] = S[k] - deltaS_k
 
+    if return_exited_flag:
+        return S, particle_exited
     return S
 
 
@@ -348,6 +391,7 @@ def build_survival_and_yield(
     tau: np.ndarray,
     E_edges: np.ndarray,
     initial_bin: Optional[int] = None,
+    max_path_cm: Optional[float] = None,
 ):
     """
     Convenience wrapper returning all key discrete quantities:
@@ -383,12 +427,14 @@ def build_survival_and_yield(
     if initial_bin is None:
         initial_bin = n_bins - 1
 
-    S = compute_survival_table(
+    S, particle_exited = compute_survival_table(
         epsilon_bin=epsilon_bin,
         sigma_bin=sigma_bin,
         target_densities=target_densities,
         E_edges=E_edges,
         initial_bin=initial_bin,
+        max_path_cm=max_path_cm,
+        return_exited_flag=True,
     )
 
     deltaS = compute_delta_survival(S)
@@ -402,7 +448,12 @@ def build_survival_and_yield(
     eps_0 = max(float(epsilon_bin[0]), 1e-300)
     deltaS_nuc_0 = float(S[0]) * (Lambda_0 / eps_0) * float(dE[0])
     deltaS_nuc_0 = np.clip(deltaS_nuc_0, 0.0, float(S[0]))
-    s_thermalized = float(S[0]) - deltaS_nuc_0  # survives to below grid
+    # If the particle exited the cloud (max_path_cm reached), it did not
+    # thermalize — s_thermalized = 0.  Otherwise use the surviving fraction.
+    if particle_exited:
+        s_thermalized = 0.0
+    else:
+        s_thermalized = float(S[0]) - deltaS_nuc_0
     deltaS[0] = deltaS_nuc_0
 
     beta_rxn_bin = compute_beta(sigma_bin, target_densities)

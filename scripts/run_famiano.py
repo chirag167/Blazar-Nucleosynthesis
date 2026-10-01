@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import math
 import sys
 import time
 from pathlib import Path
@@ -48,11 +49,17 @@ for _p in [str(_ROOT / "core"), str(_ROOT)]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from core.tau_loader import assign_tau_models_to_library, build_tau_models
 from state import CloudState, CascadeState, SolverState, NetworkState, SpeciesData, ProjectileSpectrum
 from grids import make_energy_grid
-from reactions import ReactionLibrary
+from reactions import ReactionLibrary, DWBAStubModel, DeltaAtThermalModel
+from tau_loader import build_tau_models, assign_tau_models_to_library
 from cascade import run_cascade_step
 from timestep import compute_next_dt, estimate_initial_dt, euler_increment
+from decay import apply_decay, DECAY_TABLE
+from thermonuclear import compute_thermonuclear_dydt
+from rate_library import build_thermonuclear_library
+from jacobian import implicit_euler_step
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,11 +78,11 @@ def _load_json(path: Path) -> dict:
         return json.load(f)
 
 
-def _load_configs(config_dir: Path) -> tuple[dict, dict, dict, dict]:
+def _load_configs(config_dir: Path, run_cfg_path: Path) -> tuple[dict, dict, dict, dict]:
     cloud_cfg  = _load_json(config_dir / "cloud.json")
     jet_cfg    = _load_json(config_dir / "jet.json")
     species_cfg = _load_json(config_dir / "species.json")
-    run_cfg    = _load_json(config_dir / "run.json")
+    run_cfg    = _load_json(run_cfg_path)
     return cloud_cfg, jet_cfg, species_cfg, run_cfg
 
 
@@ -388,7 +395,7 @@ def run(args: argparse.Namespace) -> None:
     run_cfg_path = Path(args.config).resolve()
 
     log.info("Loading configuration from %s", config_dir)
-    cloud_cfg, jet_cfg, species_cfg, run_cfg = _load_configs(config_dir)
+    cloud_cfg, jet_cfg, species_cfg, run_cfg = _load_configs(config_dir, run_cfg_path)
 
     # Energy grid
     grid = make_energy_grid(run_cfg["energy_grid"])
@@ -406,10 +413,59 @@ def run(args: argparse.Namespace) -> None:
         base_dir=_ROOT,
         projectile_species=_nonthermal_projectiles,
         target_species=None,    # accept all targets found in the data files
-        include_group1=False,   # Group1 requires DWBA product distributions — not yet implemented
+        include_group1=True,   # Group1 requires DWBA product distributions — not yet implemented
         include_group2=True,
     )
     log.info("Loaded %d reaction channels.", len(lib.reactions))
+    # load and assign tau models
+    # Q-values (MeV) from atomic mass differences (NNDC).
+    # Reactions with only FRESCO ejectile data need kinematic inference for
+    # the heavy recoil: T_recoil = T_proj_center + Q - T_ejectile_center.
+    _infer_recoil = {
+        "he4_he4_n_be7": ("n",  "be7", -18.99),   # 4He+4He -> n+7Be
+        "he4_he4_p_li7": ("p",  "li7", -17.35),   # 4He+4He -> p+7Li
+        "he4_p_d_he3":   ("d",  "he3", -18.35),   # 4He+p   -> d+3He
+    }
+    models = build_tau_models(
+        e_bins_root=_ROOT / "fresco_code/newruns",
+        reactions=["he4_he4_n_be7", "he4_he4_p_li7", "he4_p_d_he3", "li7_p_he4_he4"],
+        energy_edges_mev=grid.edges,
+        product_species=["n", "p", "d", "t", "3He", "4He", "7Li", "7Be"],
+        infer_recoil=_infer_recoil,
+    )
+    n_assigned = assign_tau_models_to_library(models, lib)
+    log.info("TauProductModel assigned to %d Group 1 channels.", n_assigned)
+
+    # Remaining Group 1 channels have no FRESCO kinematic output yet.
+    # Fall back to DeltaAtThermalModel (all products deposit at the lowest
+    # energy bin) so they don't raise NotImplementedError at runtime.
+    n_fallback = 0
+    for rxn in lib.by_group("group1"):
+        if isinstance(rxn.product_distribution_model, DWBAStubModel):
+            rxn.product_distribution_model = DeltaAtThermalModel()
+            n_fallback += 1
+    if n_fallback:
+        log.info(
+            "%d Group 1 channel(s) using DeltaAtThermalModel fallback "
+            "(no FRESCO kinematic data).", n_fallback
+        )
+
+    # Thermonuclear reaction library (Famiano Section 3: relevant when the
+    # cloud is dense/hot enough for pair reactions among cloud species
+    # themselves, e.g. Model A/C -- negligible for the cold, low-density
+    # Model B BLR cloud). Off by default so existing Model B configs are
+    # unaffected; enable via run.json's "thermonuclear.enabled".
+    thermo_cfg = run_cfg.get("thermonuclear", {})
+    thermonuclear_enabled = bool(thermo_cfg.get("enabled", False))
+    thermo_lib = None
+    if thermonuclear_enabled:
+        thermo_lib, thermo_report = build_thermonuclear_library()
+        log.info(
+            "Loaded thermonuclear reaction library: %d reactions.\n%s",
+            len(thermo_lib), thermo_report.summary(),
+        )
+    else:
+        log.info("Thermonuclear reactions disabled (run.json 'thermonuclear.enabled').")
 
     # Initial state
     state = build_network_state(cloud_cfg, jet_cfg, species_cfg, run_cfg, energy_edges)
@@ -417,46 +473,93 @@ def run(args: argparse.Namespace) -> None:
     # Expand cloud with all possible reaction products (Y=0) so that
     # dYdt_cloud has a valid slot for every species a reaction can produce.
     expand_cloud_with_reaction_products(state, lib)
+    if thermonuclear_enabled:
+        expand_cloud_with_reaction_products(state, thermo_lib)
     log.info("Cloud species after expansion: %s", state.cloud.species)
 
-    # Rescale injection spectra to physical units.
-    # spectrum.values[k] = n_jet_species(k) / n_baryon_cloud so that the
-    # cascade reaction rates come out in [abundance per baryon per second].
+    # Rescale injection spectra to physical per-second injection rates.
+    # spectrum.values[k] = (n_jet/n_cloud) × (v_jet/L_cloud)  [s⁻¹]
+    # The cascade computes  dYdt = amount × yield / dt_s, so setting
+    # amount = rate × dt_s gives the correct  dYdt = rate × yield  [s⁻¹].
     f_norm = compute_jet_normalization_factor(jet_cfg, cloud_cfg, species_cfg)
+    _E_per_nuc_mev = float(jet_cfg["spectrum"]["E_per_nucleon_MeV"])
+    _gamma_jet = 1.0 + _E_per_nuc_mev / _M_P_MEV
+    _v_jet_cms = math.sqrt(1.0 - 1.0 / _gamma_jet ** 2) * _C_CM_S
+    _L_cloud_cm = float(cloud_cfg.get("cloud_length_cm",
+                        cloud_cfg.get("cloud_diameter_cm", 5.0e11)))
+    _v_over_L = _v_jet_cms / _L_cloud_cm   # s⁻¹
     for spec in state.cascade.spectra.values():
-        spec.values[:] *= f_norm
+        spec.values[:] *= f_norm * _v_over_L
+    log.info(
+        "Jet injection: f_norm=%.3e  v=%.3e cm/s  L=%.2e cm  "
+        "v/L=%.3e s⁻¹  combined rate factor=%.3e s⁻¹",
+        f_norm, _v_jet_cms, _L_cloud_cm, _v_over_L, f_norm * _v_over_L,
+    )
 
-    # BLR total mass and jet mass rate for ΔM/M₀ tracking.
-    # ΔM/M₀ = cumulative jet mass transiting BLR / total BLR mass (Famiano's convention).
-    blr_mass_Msun = float(cloud_cfg.get("blr_mass_Msun", 1.0e6))
-    _M0_g = blr_mass_Msun * _MSUN_G
+    # Cloud mass and jet mass rate for ΔM/M₀ tracking.
+    # M₀ is the initial cloud mass from geometry + density (not the total BLR mass).
+    _M0_g = compute_cloud_initial_mass_g(cloud_cfg, state)
     _mass_rate_g_s = (
         float(jet_cfg.get("mass_rate", {}).get("model_B_Msun_per_yr", 1e-6))
         * _MSUN_G / _S_PER_YR
     )
     log.info(
-        "BLR mass M₀ = %.3e M_sun | jet mass rate = %.3e g/s | "
-        "ΔM/M₀ rate = %.3e yr⁻¹",
-        blr_mass_Msun, _mass_rate_g_s,
-        _mass_rate_g_s * _S_PER_YR / _M0_g,
+        "Cloud mass M₀ = %.3e g (%.3e M_sun) | jet mass rate = %.3e g/s | "
+        "ΔM/M₀ rate = %.3e s⁻¹",
+        _M0_g, _M0_g / _MSUN_G, _mass_rate_g_s,
+        _mass_rate_g_s / _M0_g,
     )
 
-    # Snapshot of the steady-state jet injection spectrum.
-    # In Famiano's model the jet continuously transits the cloud; unreacted
-    # particles exit rather than thermalize. We maintain a constant spectrum
-    # (the steady-state jet density) by resetting to the injection values at
-    # the start of every cascade step.  Only nuclear-reaction products modify
-    # the cloud abundances.
-    _injection_values: dict[str, np.ndarray] = {
+    # Store per-second injection rates (already scaled above).
+    # At each step we set spectrum.values = rate × dt_s so the cascade formula
+    # dYdt = (amount × yield) / dt_s reduces to the dt-independent rate × yield.
+    _injection_rates: dict[str, np.ndarray] = {
         sp: spec.values.copy()
         for sp, spec in state.cascade.spectra.items()
     }
+
+    # Cloud volume and jet mean-A for constant-volume density evolution (Famiano ρ̇ = K).
+    _cloud_diameter_cm = float(cloud_cfg.get("cloud_diameter_cm", 5.0e11))
+    _V_cloud_cm3 = math.pi * (_cloud_diameter_cm / 2.0) ** 2 * _L_cloud_cm
+    _jet_species_list = [s for s in jet_cfg["species"] if not s.startswith("_")]
+    _jet_comp = {k: float(v) for k, v in jet_cfg.get("composition_number_fractions", {}).items()
+                 if not k.startswith("_")}
+    _jet_total_frac = sum(_jet_comp.get(sp, 1.0) for sp in _jet_species_list)
+    _mean_A_jet = sum(
+        (_jet_comp.get(sp, 1.0) / _jet_total_frac) * float(species_cfg.get(sp, {}).get("A", 1))
+        for sp in _jet_species_list
+    )
+    # Jet BARYON fractions for density-evolution mixing.
+    # density_cm3 tracks baryon number density (n_baryons/cm³); Y_i = n_i/n_baryons,
+    # so jet baryons must be added at baryon fractions: Y_i_jet = number_frac_i / mean_A_jet.
+    _jet_baryon_fractions = {
+        sp: (_jet_comp.get(sp, 1.0) / _jet_total_frac) / _mean_A_jet
+        for sp in _jet_species_list
+    }
+    log.info(
+        "Cloud volume = %.3e cm³ | mean jet A = %.3f | "
+        "baryon density growth rate = %.3e cm⁻³ s⁻¹",
+        _V_cloud_cm3, _mean_A_jet,
+        _mass_rate_g_s / (_V_cloud_cm3 * _AMU_G),
+    )
 
     # Output setup
     output_cfg = run_cfg.get("output", {})
     out_csv = _ROOT / output_cfg.get("history_csv", "outputs/abundance_history.csv")
     out_json = _ROOT / output_cfg.get("final_state_json", "outputs/final_state.json")
     write_every = int(output_cfg.get("write_every_n_steps", 100))
+    # A jet on/off transition resets dt down to dt_min (see the transition
+    # handling below), and the fast ramp that follows -- production
+    # resuming, or a short-lived species climbing back to equilibrium --
+    # typically completes within a couple hundred solver steps, long before
+    # dt has regrown back to a "normal" size. At the coarse write_every_n_steps
+    # cadence used for the rest of a run, that entire ramp can start and
+    # finish inside the gap between two written rows, so the CSV shows a
+    # multi-order-of-magnitude change between adjacent rows even though the
+    # solver stepped through it smoothly -- the recording missed it, not the
+    # physics. For this many steps after each transition, write every step
+    # instead, then fall back to the normal cadence once things have settled.
+    fine_write_steps = int(output_cfg.get("fine_write_steps_after_transition", 300))
     out_csv.parent.mkdir(parents=True, exist_ok=True)
 
     solver_cfg = run_cfg.get("solver", {})
@@ -465,10 +568,67 @@ def run(args: argparse.Namespace) -> None:
     dt_max   = float(solver_cfg.get("dt_max_s", 1e11))
     max_steps = int(solver_cfg.get("max_steps", 100000))
 
+    # Jet on/off intervals: injection (and jet mass loading) is only active
+    # while t_s falls within one of these [on_s, off_s] pairs, letting the
+    # jet be switched on and off multiple times over the run. The cascade
+    # keeps running (secondary reactions + decay) at all times, until tmax_s.
+    # Defaults to always-on (a single interval covering the whole run) if
+    # not configured. A legacy scalar 'jet_stop_s' is still honored as
+    # [[t0_s, jet_stop_s]] for backward compatibility.
+    if "jet_intervals" in run_cfg["time"]:
+        _jet_intervals = [
+            (float(on_s), float(off_s)) for on_s, off_s in run_cfg["time"]["jet_intervals"]
+        ]
+    elif "jet_stop_s" in run_cfg["time"]:
+        _jet_intervals = [(float(run_cfg["time"]["t0_s"]), float(run_cfg["time"]["jet_stop_s"]))]
+    else:
+        _jet_intervals = [(float(run_cfg["time"]["t0_s"]), state.solver.t_end_s)]
+
+    def _is_jet_on(t_s: float) -> bool:
+        return any(on_s <= t_s < off_s for on_s, off_s in _jet_intervals)
+
+    # Sorted on/off edges, used to (a) stop a step from straddling a
+    # transition and (b) detect when a step lands exactly on one.
+    _jet_boundaries = sorted({b for on_s, off_s in _jet_intervals for b in (on_s, off_s)})
+
+    def _next_jet_boundary(t_s: float) -> float | None:
+        for b in _jet_boundaries:
+            if b > t_s:
+                return b
+        return None
+
+    _jet_was_on = _is_jet_on(state.solver.t_s)
+    _fine_write_until_step = 0  # write every step through this step number
+
+    decay_cfg = run_cfg.get("decay", {})
+    decay_enabled = bool(decay_cfg.get("enabled", True))
+    if decay_enabled:
+        log.info(
+            "Radioactive decay enabled for %d species: %s",
+            len(DECAY_TABLE), sorted(DECAY_TABLE.keys()),
+        )
+    else:
+        log.info("Radioactive decay disabled via config/run.json 'decay.enabled'.")
+
     import csv
     fieldnames = ["step", "t_s", "delta_m_over_m0"] + list(state.cloud.species)
 
     delta_m_over_m0 = 0.0   # cumulative ΔM/M₀
+    _initial_density_cm3 = state.cloud.density_cm3  # for per-step injection correction
+    _species_A = {
+        sp: int(cfg["A"])
+        for sp, cfg in species_cfg.items()
+        if isinstance(cfg, dict) and "A" in cfg
+    }
+    # Mass numbers aligned with state.cloud.species, for crediting the
+    # baryons the cascade moves around each step (see baryon-conservation
+    # reconciliation in the main loop below).
+    _A_cloud = np.array(
+        [state.species_data[sp].A if sp in state.species_data else 1.0
+         for sp in state.cloud.species],
+        dtype=float,
+    )
+    _jet_sp_set = set(_injection_rates.keys())
 
     t_start_wall = time.time()
     log.info("Starting evolution: t_end = %.3e s, max_steps = %d", state.solver.t_end_s, max_steps)
@@ -482,19 +642,79 @@ def run(args: argparse.Namespace) -> None:
         while not state.solver.done and step < max_steps:
             dt = state.solver.dt_s
 
-            # --- Reset jet spectrum to steady-state injection values ---
-            # Famiano's model: jet continuously transits cloud at constant flux.
-            # Unreacted particles exit; we maintain the constant injection
-            # profile each step so reaction rates depend only on cloud composition.
-            for sp, inj_vals in _injection_values.items():
+            # --- Clamp dt so a single step never straddles a jet on/off
+            # transition. Without this, a step whose dt was grown large
+            # during a quiet (jet-off) stretch could run right past an
+            # "on" boundary and apply the OLD jet state for part of a step
+            # that should have seen the NEW one (or vice versa on an "off"
+            # boundary) -- i.e. injection starting/stopping late or early.
+            # Clamping forces every transition to fall exactly on a step
+            # edge, so each step's _jet_on flag is correct for its full
+            # duration. ---
+            _next_boundary = _next_jet_boundary(state.solver.t_s)
+            if _next_boundary is not None:
+                _gap = _next_boundary - state.solver.t_s
+                if _gap > 0.0:
+                    dt = min(dt, _gap)
+
+            # --- Jet on/off: only inject new jet particles while t_s falls in
+            # one of _jet_intervals, while letting the cascade keep evolving
+            # (secondary reactions + decay) at all times until t_end_s. ---
+            _jet_on = _is_jet_on(state.solver.t_s)
+            if _jet_on != _jet_was_on:
+                log.info(
+                    "Jet injection %s at t = %.4e s.",
+                    "started" if _jet_on else "stopped", state.solver.t_s,
+                )
+                _jet_was_on = _jet_on
+                # Sample every step for a while after ANY transition (both
+                # directions) -- the fast ramp up when injection resumes
+                # and the fast decay-down when it stops are both easy to
+                # miss between two write_every_n_steps-spaced rows.
+                _fine_write_until_step = step + fine_write_steps
+                if _jet_on:
+                    # Only reset on OFF->ON: reusing a stale dt (however
+                    # large it happens to be) for the first step where
+                    # injection switches on would apply the new source term
+                    # over a step sized for the old, quieter dynamics -- an
+                    # explicit-Euler overshoot that shows up as an unphysical
+                    # jump. Forcing this one step back down to dt_min lets
+                    # the controller re-measure the new dYdt honestly; it
+                    # grows back to an efficient step size within a handful
+                    # of steps once real activity resumes.
+                    #
+                    # Do NOT do this on ON->OFF: there is no overshoot risk
+                    # in going quiet (decay uses the exact exponential
+                    # solution regardless of dt, and the boundary clamp
+                    # above already stops this step exactly at the edge).
+                    # Worse, forcing dt down here is actively harmful: once
+                    # injection stops, delta_y is ~0 every step, so
+                    # compute_next_dt's "nothing changed" branch just holds
+                    # dt wherever it last was -- nothing grows it back up.
+                    # Crushing it to dt_min right as the quiet stretch
+                    # begins would pin the solver at the smallest possible
+                    # step for the entire OFF interval (potentially tens of
+                    # thousands of steps to cross a gap that only needed a
+                    # handful), rather than coasting at whatever dt the
+                    # controller had already earned.
+                    dt = min(dt, dt_min)
+
+            # --- Set per-step injection: rate [s⁻¹] × dt ---
+            # Famiano's model: jet continuously transits the cloud.
+            # amount = rate × dt gives the correct dt-independent dYdt = rate × yield.
+            # As cloud density grows the jet flux per baryon decreases:
+            # f_norm = n_jet/n_cloud ∝ 1/density, so rescale by ρ₀/ρ each step.
+            _rho_frac = _initial_density_cm3 / state.cloud.density_cm3
+            for sp, rate_vals in _injection_rates.items():
+                _amount = rate_vals * dt * _rho_frac if _jet_on else np.zeros_like(rate_vals)
                 if sp in state.cascade.spectra:
-                    state.cascade.spectra[sp].values[:] = inj_vals
+                    state.cascade.spectra[sp].values[:] = _amount
                 else:
                     from state import ProjectileSpectrum
                     state.cascade.spectra[sp] = ProjectileSpectrum(
                         species=sp,
                         energy_MeV=energy_edges[:-1] + 0.5 * np.diff(energy_edges),
-                        values=inj_vals.copy(),
+                        values=_amount,
                     )
 
             # --- Cascade step ---
@@ -505,9 +725,23 @@ def run(args: argparse.Namespace) -> None:
                 dt_s=dt,
                 update_cloud=False,   # we apply the Euler step manually below
                 update_spectra=False, # steady-state: spectrum is reset each step
+                cloud_length_cm=_L_cloud_cm,
             )
 
-            # --- Explicit Euler abundance update ---
+            # Thermalize heavy non-thermal reaction products (A≥6) into Y_cloud.
+            # Light products (n, d, t, 3He) have long stopping ranges in the thin-target
+            # cloud and exit without thermalizing.  Heavy recoils (7Li, 6Li) stop.
+            # Jet species (p, 4He) are handled by the density-evolution step below.
+            for _sp_nt, _nt_vals in result.injected_spectra.items():
+                if _sp_nt in _jet_sp_set:
+                    continue
+                if _species_A.get(_sp_nt, 0) < 6:
+                    continue  # light products exit the cloud
+                if _sp_nt in state.cloud.species and dt > 0.0:
+                    _c_idx_nt = state.cloud.species.index(_sp_nt)
+                    result.dYdt_cloud[_c_idx_nt] += float(np.sum(_nt_vals)) / dt
+
+            # --- Explicit Euler abundance update (nuclear reactions) ---
             y_new, delta_y = euler_increment(
                 y=state.cloud.Y,
                 dydt=result.dYdt_cloud,
@@ -515,6 +749,97 @@ def run(args: argparse.Namespace) -> None:
                 enforce_nonnegative=True,
             )
             state.cloud.Y = y_new
+
+            # --- Thermonuclear reactions (operator split, IMPLICIT Euler) ---
+            # Unlike the cascade above, every reactant and product here is
+            # already a cloud species (see core/thermonuclear.py), so each
+            # reaction conserves Sum_i A_i Y_i exactly on its own -- no
+            # density_cm3 credit is needed the way the cascade's jet-sourced
+            # baryons need one below. y_new/delta_y are updated in place so
+            # the adaptive-timestep call further down sees the combined
+            # cascade+thermonuclear change, not just the cascade's alone.
+            #
+            # Explicit Euler was tried first here and confirmed stiff at
+            # Famiano's actual Model A conditions (T9=0.6, n=1e18 cm^-3):
+            # nearly every tracked species clipped to zero on nearly every
+            # step, even at dt_min. Per Famiano eq. (2) (and Section 3's own
+            # statement that Model A needs implicit integration), this now
+            # uses jacobian.implicit_euler_step() -- one linearized backward-
+            # Euler solve per step -- instead of timestep.euler_increment().
+            if thermonuclear_enabled and dt > 0.0:
+                def _thermo_rhs(Y_trial: np.ndarray) -> np.ndarray:
+                    return compute_thermonuclear_dydt(state, thermo_lib, Y=Y_trial)
+
+                y_new, delta_y_thermo, _clipped = implicit_euler_step(
+                    y=state.cloud.Y,
+                    rhs_func=_thermo_rhs,
+                    dt=dt,
+                    enforce_nonnegative=True,
+                )
+                if np.any(_clipped):
+                    # Even the linearized implicit solve can clip a fast-
+                    # depleting trace species if the local linearization
+                    # (Jacobian evaluated at Y(t), not iterated) isn't a
+                    # good approximation over this dt. Expected to be rare;
+                    # frequent clipping here would mean the timestep itself
+                    # needs shrinking, or a fully Newton-iterated solve.
+                    log.warning(
+                        "step %d: implicit thermonuclear update still clipped "
+                        "to zero for %s (linearization error at dt=%.3e s).",
+                        step, [state.cloud.species[i] for i in np.flatnonzero(_clipped)], dt,
+                    )
+                state.cloud.Y = y_new
+                delta_y = delta_y + delta_y_thermo
+
+            # --- Credit the cascade's baryon injection to density_cm3 ---
+            # result.dYdt_cloud already moved mass between species (targets
+            # destroyed, products created, jet self-thermalization via
+            # s_thermalized). Since Y_i = n_i/n_baryons must always satisfy
+            # Sum_i A_i Y_i = 1, the baryon-density denominator has to grow by
+            # exactly the same fractional amount the numerator just grew by:
+            #     n_new = n_old * (1 + dt * Sum_i A_i dYdt_cloud_i)
+            # Previously density_cm3 was left untouched here and only grown
+            # later by the unrelated bulk jet-mass rate below, so every
+            # reacted/thermalized baryon was added to Y without ever being
+            # credited to the baryon budget -- manufacturing mass for free.
+            _n_before_cascade = state.cloud.density_cm3
+            _frac_cascade = dt * float(np.dot(_A_cloud, result.dYdt_cloud))
+            _frac_cascade = max(_frac_cascade, -0.999)  # guard against a pathological negative rate
+            state.cloud.density_cm3 = _n_before_cascade * (1.0 + _frac_cascade)
+            state.cloud.Y = state.cloud.Y / (1.0 + _frac_cascade)
+
+            # --- Constant-volume density evolution (Famiano ρ̇ = K) ---
+            # density_cm3 = baryon number density (n_baryons/cm³); Y_i = n_i/n_baryons.
+            # Ṁ is the TOTAL jet mass entering the cloud this step, reacted and
+            # unreacted alike. The reacted/thermalized share was already
+            # credited above via the cascade, so only the remainder is mixed
+            # in as raw jet composition here -- otherwise that mass would be
+            # double-counted (once as reaction products, once again as raw
+            # p/⁴He from the bulk rate).
+            #   1. Dilute existing composition: Y_i *= n_baryons_old / n_baryons_new
+            #   2. Add remaining jet baryons at jet baryon fractions (Y_i_jet = number_frac_i / mean_A_jet)
+            # This preserves Sum_i A_i Y_i = 1 at all times.
+            _m_cascade_g = _frac_cascade * _n_before_cascade * _V_cloud_cm3 * _AMU_G
+            _mass_rate_g_s_eff = _mass_rate_g_s if _jet_on else 0.0
+            _m_bulk_g = max(0.0, _mass_rate_g_s_eff * dt - _m_cascade_g)
+            _old_density = state.cloud.density_cm3
+            state.cloud.density_cm3 += _m_bulk_g / (_V_cloud_cm3 * _AMU_G)
+            _f_old = _old_density / state.cloud.density_cm3   # old baryon fraction
+            _f_new = 1.0 - _f_old                              # new jet baryon fraction
+            state.cloud.Y *= _f_old
+            for _sp, _Y_jet in _jet_baryon_fractions.items():
+                if _sp in state.cloud.species:
+                    state.cloud.Y[state.cloud.species.index(_sp)] += _Y_jet * _f_new
+
+            # --- Radioactive decay (operator split) ---
+            # Applied to the thermalized cloud reservoir only (not the
+            # in-flight non-thermal spectra, which are reset each step -- see
+            # update_spectra=False above). Uses the exact exponential solution
+            # rather than explicit Euler because several tracked species
+            # (8Li, 8B, 16N) have half-lives far shorter than dt_max_s, which
+            # would make forward Euler numerically unstable.
+            if decay_enabled and dt > 0.0:
+                state.cloud.Y = apply_decay(state.cloud.Y, state.cloud.species, dt)
 
             # --- Adaptive timestep (Famiano eq. 4) ---
             dt_next = compute_next_dt(
@@ -525,11 +850,21 @@ def run(args: argparse.Namespace) -> None:
                 dt_min=dt_min,
                 dt_max=dt_max,
             )
-            state.solver.set_dt(dt_next)
 
             # --- Advance time and track ΔM/M₀ ---
-            delta_m_over_m0 += _mass_rate_g_s * dt / _M0_g
+            # advance_time() moves t_s forward by state.solver.dt_s, so that
+            # field must hold the dt actually used above for this step's
+            # update (the possibly boundary-clamped `dt`), NOT dt_next --
+            # dt_next is the size proposed for the step AFTER this one.
+            # Setting it first and advancing second, as before, moved time
+            # by next step's size instead of this step's, silently
+            # decoupling t_s from the dt used to compute y_new/delta_y/decay
+            # on every step. dt_next is staged into state.solver.dt_s only
+            # once advance_time() has consumed the correct value.
+            delta_m_over_m0 += _mass_rate_g_s_eff * dt / _M0_g
+            state.solver.set_dt(dt)
             state.solver.advance_time()
+            state.solver.set_dt(dt_next)
             step += 1
 
             if step % write_every == 0:
@@ -538,6 +873,11 @@ def run(args: argparse.Namespace) -> None:
                     step, state.solver.t_s, dt_next, delta_m_over_m0,
                     state.cloud.get_abundance("p") if "p" in state.cloud.species else float("nan"),
                 )
+            # Write every step through _fine_write_until_step (recent jet
+            # transition) even when it falls between write_every_n_steps
+            # rows, on top of the normal coarse cadence -- see
+            # fine_write_steps_after_transition above.
+            if step % write_every == 0 or step <= _fine_write_until_step:
                 _write_history_row(fh, writer, state, state.solver.t_s, step, delta_m_over_m0)
 
         # Write final row

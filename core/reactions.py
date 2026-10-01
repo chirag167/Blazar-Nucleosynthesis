@@ -898,6 +898,24 @@ class ReactionChannel:
             return projectile_energy_mev > 0.0
         return projectile_energy_mev >= self.threshold_mev
 
+    @property
+    def is_elastic(self) -> bool:
+        """True when the reaction is elastic scatter (same nuclei in and out).
+
+        Covers both notation conventions for A(a,b)B:
+          - normal kinematics:   ejectile==projectile AND residual==target
+          - inverse kinematics:  ejectile==target     AND residual==projectile
+
+        Elastic reactions contribute to the survival-fraction integral (Lambda_k)
+        but do not change cloud composition: the target nucleus is not destroyed,
+        it merely receives a kinetic kick and re-thermalises in the cloud.
+        """
+        ej = canonical_species_name(self.ejectile_label)
+        res = canonical_species_name(self.residual)
+        proj = canonical_species_name(self.projectile)
+        tgt = canonical_species_name(self.target)
+        return (ej == proj and res == tgt) or (ej == tgt and res == proj)
+
     def sigma_mb(self, projectile_energy_mev: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         E = np.asarray(projectile_energy_mev, dtype=float)
         sigma = self.cross_section.sigma_interpolate(E)

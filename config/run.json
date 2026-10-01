@@ -28,8 +28,9 @@
   "time": {
     "t0_s": 0.0,
     "tmax_s": 1.0e5,
+    "jet_intervals": [[0, 1.0e4], [1.3e4, 2.3e4], [2.6e4, 3.6e4]],
     "dt_s": 1.0,
-    "_comment": "tmax_s = 1e5 s (~1 day); Famiano (2002) bottom x-axis is in seconds (~10^4 s); dt_s is initial guess only"
+    "_comment": "tmax_s = 1e5 s (~1 day); Famiano (2002) bottom x-axis is in seconds (~10^4 s); dt_s is initial guess only. jet_intervals: list of [on_s, off_s] pairs during which jet injection (and mass loading) is active; the jet can be switched on and off multiple times by adding more pairs, e.g. [[0.0, 1.0e4], [3.0e4, 5.0e4]]. Outside all intervals the cascade (reactions among already-produced non-thermal species + radioactive decay) keeps running until tmax_s. For backward compatibility, a legacy single 'jet_stop_s' value is still honored as [[t0_s, jet_stop_s]] if 'jet_intervals' is absent."
   },
 
   "energy_grid": {
@@ -50,12 +51,18 @@
     "dt_min_s": 1.0e-2,
     "dt_max_s": 1.0e4,
     "max_steps": 100000,
-    "_comment": "gamma = 0.01 per Famiano eq. (4) Section 3; dt_min/max scaled for seconds-timescale run"
+    "dt_rel_floor": 1.0e-20,
+    "_comment": "gamma = 0.01 per Famiano eq. (4) Section 3; dt_min/max scaled for seconds-timescale run. dt_rel_floor: species with Y below this are ignored by the timestep controller (default 1e-30 if omitted); 1e-20 stops trace species like 8Li (~1e-25) from throttling dt in the hot Model A cloud."
   },
 
   "output": {
     "history_csv": "outputs/abundance_history.csv",
     "final_state_json": "outputs/final_state.json",
     "write_every_n_steps": 100
+  },
+
+  "thermonuclear": {
+    "enabled": true,
+    "_comment": "Off by default: negligible for cold/low-density Model B. Set true for Model A/C (hot/dense clumps), where cloud-species pair reactions matter. Uses core/rate_library.py's build_thermonuclear_library() -- NACRE/CF88/Bao/Table-1-special sources, still missing the Wagoner-sourced special captures (see MISSING_SPECIAL_CAPTURES in that module). Still integrated with EXPLICIT Euler; watch the run log for 'thermonuclear update clipped' warnings, which signal the rates are stiff enough at this cloud's T9/density to need implicit integration instead (see jacobian.py, not yet wired up)."
   }
 }

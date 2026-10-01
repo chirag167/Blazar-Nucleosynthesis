@@ -261,28 +261,31 @@ def _accumulate_products(
     Non-thermal descendants are injected into spectra.
     Thermal / heavy descendants are added directly to the cloud abundance RHS.
     """
-    n_rxn, _, n_products, n_prod_bins = yield_tensor.shape
+    _, _, _, n_prod_bins = yield_tensor.shape
+    prod_index = {sp: i for i, sp in enumerate(product_species_order)}
 
     for i_rxn, rxn in enumerate(reactions_for_projectile):
         # Target destruction contribution to cloud abundances.
-        # Total number of reaction events from this injected projectile is the
-        # integrated yield over all products/bins divided in practice by the
-        # channel multiplicity structure. The robust quantity available here is
-        # the per-reaction destruction probability:
-        #   sum_k beta_i(k) DeltaS(k)
-        #
-        # We reconstruct it from the yield tensor by summing and dividing by the
-        # total multiplicity carried by tau for species that appear in this rxn.
-        rxn_events = 0.0
-        for p_idx in range(n_products):
-            total_for_product = float(np.sum(yield_tensor[i_rxn, :, p_idx, :]))
-            if total_for_product > 0.0:
-                rxn_events = max(rxn_events, total_for_product)
+        # Number of reaction events is read off the residual product, whose
+        # stoichiometric multiplicity is always 1 (products_stoich always adds
+        # exactly one residual). Reading it from a multi-particle ejectile
+        # instead (e.g. the "2p" in p(4He,2p)3H) would count 2 events per
+        # reaction, over-destroying the target relative to the products
+        # actually created and breaking baryon conservation for that channel.
+        residual_species = canonical_species_name(rxn.residual)
+        residual_mult = max(int(rxn.products_stoich.get(residual_species, 1)), 1)
+        p_idx_res = prod_index.get(residual_species)
+        rxn_events = (
+            float(np.sum(yield_tensor[i_rxn, :, p_idx_res, :])) / residual_mult
+            if p_idx_res is not None else 0.0
+        )
 
         rxn_events *= injected_amount
 
+        # Elastic reactions contribute to stopping (Lambda_k) but leave the
+        # cloud composition unchanged: the target re-thermalises in place.
         t_idx = _ensure_cloud_species_index(state, rxn.target)
-        if t_idx is not None and dt_s > 0.0:
+        if t_idx is not None and dt_s > 0.0 and not rxn.is_elastic:
             dYdt_cloud[t_idx] -= rxn_events / dt_s
 
         # Product creation contribution.
@@ -349,6 +352,7 @@ def compute_cascade_step(
     reaction_library: ReactionLibrary,
     energy_edges_mev: np.ndarray,
     dt_s: Optional[float] = None,
+    cloud_length_cm: Optional[float] = None,
 ) -> CascadeStepResult:
     """
     Compute one cascade bookkeeping pass.
@@ -364,6 +368,11 @@ def compute_cascade_step(
     dt_s
         Timestep used only to convert event counts into cloud-abundance rates.
         If omitted, state.solver.dt_s is used.
+    cloud_length_cm : float, optional
+        Physical path length of the cloud [cm].  When provided the survival
+        integral is truncated at this path length (thin-target approximation),
+        so the yield reflects only the cloud traversal rather than the full
+        stopping range.  Required for Famiano's thin BLR cloud (Model B).
 
     Returns
     -------
@@ -461,6 +470,7 @@ def compute_cascade_step(
                 tau=tau,
                 E_edges=energy_edges_mev,
                 initial_bin=initial_bin,
+                max_path_cm=cloud_length_cm,
             )
 
             # Surviving projectile bookkeeping
@@ -482,6 +492,16 @@ def compute_cascade_step(
                 dYdt_cloud=dYdt_cloud,
                 dt_s=float(dt_s),
             )
+
+            # Thermalized projectile source: jet particles that slow to thermal
+            # energies without reacting become cloud particles of that species.
+            # Without this, jet 4He is only destroyed (as a target) and never
+            # replenished, causing catastrophic depletion.
+            s_th = float(sy["s_thermalized"])
+            if s_th > 0.0:
+                proj_idx = _ensure_cloud_species_index(state, projectile)
+                if proj_idx is not None:
+                    dYdt_cloud[proj_idx] += amount * s_th / float(dt_s)
 
         injected_spectra.setdefault(projectile, np.zeros(n_bins, dtype=float))
         injected_spectra[projectile] += projectile_out
@@ -577,6 +597,7 @@ def run_cascade_step(
     dt_s: Optional[float] = None,
     update_cloud: bool = True,
     update_spectra: bool = True,
+    cloud_length_cm: Optional[float] = None,
 ) -> CascadeStepResult:
     """
     High-level convenience wrapper:
@@ -590,6 +611,7 @@ def run_cascade_step(
         reaction_library=reaction_library,
         energy_edges_mev=energy_edges_mev,
         dt_s=dt_s,
+        cloud_length_cm=cloud_length_cm,
     )
 
     store_cascade_step_in_state(state, result)

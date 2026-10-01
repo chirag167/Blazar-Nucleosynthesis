@@ -128,9 +128,27 @@ def compute_next_dt(
     Species are ignored if:
         - |Y_i^{n+1}| <= rel_floor
         - |D_i| <= abs_floor
+        - |Y_i^{n}| <= rel_floor   (species making its first appearance
+          this step -- see below)
 
     If no species survive the filtering, the timestep is kept unchanged
     (subject to clipping and growth cap).
+
+    Why the third condition is needed
+    ----------------------------------
+    A species with Y_i^{n} ~= 0 that becomes nonzero this step has
+    D_i ~= Y_i^{n+1} by construction, making the ratio |Y_i^{n+1}|/|D_i|
+    collapse to ~1 regardless of how small the produced amount actually
+    is -- "relative change from zero" is mathematically degenerate, not a
+    genuine sign of fast/dangerous dynamics. Without excluding these,
+    dt collapses toward dt_min on essentially every step of any network
+    where new species keep turning on from zero (e.g. a large reaction
+    network gradually populating trace daughter species), even once the
+    dynamics that matter are well resolved. Requiring the species to have
+    already been non-negligible BEFORE the step (Y_i^{n} > rel_floor) means
+    only the one-time "turning on" is excluded; from the very next step
+    onward Y_i^{n} = this step's Y_i^{n+1}, so continued fast growth of a
+    now-established species still throttles dt exactly as before.
     """
     y_new = _as_1d_float_array(y_new, "y_new")
     delta_y = _as_1d_float_array(delta_y, "delta_y")
@@ -152,8 +170,9 @@ def compute_next_dt(
 
     y_abs = np.abs(y_new)
     d_abs = np.abs(delta_y)
+    y_old_abs = np.abs(y_new - delta_y)
 
-    valid = (y_abs > rel_floor) & (d_abs > abs_floor)
+    valid = (y_abs > rel_floor) & (d_abs > abs_floor) & (y_old_abs > rel_floor)
 
     if np.any(valid):
         ratios = y_abs[valid] / d_abs[valid]

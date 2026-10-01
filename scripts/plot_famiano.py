@@ -19,6 +19,8 @@ Usage
 from __future__ import annotations
 
 import argparse
+import json
+import re
 from pathlib import Path
 import sys
 
@@ -68,6 +70,66 @@ def _style_for(sp: str, fallback_idx: int) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Title: derived from the actual cloud/jet config, not hard-coded
+# ---------------------------------------------------------------------------
+
+_LATEX_LABEL_RE = re.compile(r"^(\d+)([A-Za-z]+)$")
+
+
+def _species_latex(sp: str) -> str:
+    """'4He' -> '$^4$He'; bare light particles ('p','d','t','n') pass through."""
+    m = _LATEX_LABEL_RE.match(sp)
+    if m:
+        return f"$^{{{m.group(1)}}}${m.group(2)}"
+    return sp
+
+
+def _format_sci(x: float) -> str:
+    """1.0e+18 -> '10^{18}'; 6.5e+08 -> '6.5\\times10^{8}'."""
+    exp = int(np.floor(np.log10(abs(x)))) if x != 0 else 0
+    mantissa = x / (10 ** exp)
+    if abs(mantissa - 1.0) < 1e-9:
+        return f"10^{{{exp}}}"
+    return rf"{mantissa:.1f}\times10^{{{exp}}}"
+
+
+def _detect_model_label(cloud_cfg: dict, n0: float, T: float) -> str:
+    """Best-effort '(Model A)'/'(Model B)' tag if n0/T exactly match one of
+    cloud.json's named reference blocks; omitted (not guessed) otherwise --
+    a config that doesn't match either isn't safe to label as one."""
+    for name, tag in (("model_A", "Model A"), ("model_B", "Model B")):
+        block = cloud_cfg.get(name)
+        if not isinstance(block, dict):
+            continue
+        if (
+            np.isclose(float(block.get("density_cm3", np.nan)), n0, rtol=1e-6)
+            and np.isclose(float(block.get("temperature_K", np.nan)), T, rtol=1e-6)
+        ):
+            return f" ({tag})"
+    return ""
+
+
+def build_title(cloud_cfg: dict, jet_cfg: dict) -> str:
+    """Build the figure suptitle from the actual cloud/jet config values,
+    instead of a hard-coded 'Model B' string that goes stale the moment a
+    different cloud.json is used to produce the plotted CSV."""
+    n0 = float(cloud_cfg["density_cm3"])
+    T = float(cloud_cfg["temperature_K"])
+    model_label = _detect_model_label(cloud_cfg, n0, T)
+
+    jet_species = [s for s in jet_cfg.get("species", []) if not str(s).startswith("_")]
+    jet_label = " + ".join(_species_latex(s) for s in jet_species) or "?"
+    E_per_nuc = jet_cfg.get("spectrum", {}).get("E_per_nucleon_MeV")
+    energy_part = f" at {E_per_nuc:.0f} MeV/nucleon" if E_per_nuc is not None else ""
+
+    return (
+        rf"Blazar Jet Nucleosynthesis — Famiano (2002) style{model_label}" "\n"
+        rf"Cloud  $n_0 = {_format_sci(n0)}$ cm$^{{-3}}$,  $T = {_format_sci(T)}$ K;"
+        rf"  Jet: {jet_label}{energy_part}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Data helpers
 # ---------------------------------------------------------------------------
 
@@ -95,7 +157,7 @@ def _active_species(df: pd.DataFrame) -> list[str]:
 # Plot
 # ---------------------------------------------------------------------------
 
-def plot_abundances(df: pd.DataFrame, out_path: Path) -> None:
+def plot_abundances(df: pd.DataFrame, out_path: Path, title: str) -> None:
     # Drop t = 0 (undefined on log scale) and rows with non-positive time
     df = df[df["t_s"] > 0].copy().reset_index(drop=True)
     t_s = df["t_s"].values
@@ -114,10 +176,17 @@ def plot_abundances(df: pd.DataFrame, out_path: Path) -> None:
     # --- Build figure ---
     fig, ax = plt.subplots(figsize=(10, 6))
 
+    # Normalise to hydrogen (Y/H), matching Famiano (2002) Fig. 3 y-axis convention.
+    y_H_raw = pd.to_numeric(df["p"], errors="coerce").values.astype(float)
+    y_H = np.where(y_H_raw > 0, y_H_raw, np.nan)
+
     fallback_idx = 0
     for sp in species:
+        if sp == "p":
+            continue  # Y_p / Y_H = 1 everywhere; omitted as in Famiano figs.
         y = pd.to_numeric(df[sp], errors="coerce").values.astype(float)
-        y_pos = np.where(y > 0, y, np.nan)
+        y_over_H = y / y_H
+        y_pos = np.where(y_over_H > 0, y_over_H, np.nan)
         if np.all(np.isnan(y_pos)):
             continue
         kw = _style_for(sp, fallback_idx)
@@ -128,13 +197,16 @@ def plot_abundances(df: pd.DataFrame, out_path: Path) -> None:
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("Time (s)", fontsize=13)
-    ax.set_ylabel(r"Abundance $Y_i$  (per baryon)", fontsize=13)
+    ax.set_ylabel(r"$Y_i\,/\,Y_\mathrm{H}$", fontsize=13)
 
     # Tighten y-limits: smallest plotted value floored at 1e-20
     finite_vals = []
     for sp in species:
+        if sp == "p":
+            continue
         y = pd.to_numeric(df[sp], errors="coerce").values.astype(float)
-        pos = y[y > 0]
+        y_over_H = y / y_H_raw
+        pos = y_over_H[y_over_H > 0]
         if pos.size:
             finite_vals.append(pos.min())
     if finite_vals:
@@ -152,12 +224,7 @@ def plot_abundances(df: pd.DataFrame, out_path: Path) -> None:
         )
         ax2.set_xlabel(r"$\Delta M\,/\,M_0$", fontsize=13)
 
-    fig.suptitle(
-        "Blazar Jet Nucleosynthesis — Famiano (2002) Model B\n"
-        r"(BLR cloud, $n = 10^{11}$ cm$^{-3}$, $T = 10^4$ K;"
-        r" Jet: p + $^4$He at 100 MeV/nucleon, Group-2 reactions)",
-        fontsize=11,
-    )
+    fig.suptitle(title, fontsize=11)
     fig.tight_layout()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -168,7 +235,7 @@ def plot_abundances(df: pd.DataFrame, out_path: Path) -> None:
     last = df.iloc[-1]
     print(f"  t_final      = {last['t_s']:.3e} s")
     if "delta_m_over_m0" in df.columns:
-        print(f"  ΔM/M₀ final  = {last['delta_m_over_m0']:.3e}")
+        print(f"  dM/M0 final  = {last['delta_m_over_m0']:.3e}")
     for sp in species:
         y0 = float(pd.to_numeric(df[sp], errors="coerce").iloc[0])
         yf = float(pd.to_numeric(last[sp], errors="coerce"))
@@ -192,6 +259,19 @@ def _parse_args() -> argparse.Namespace:
         "--out",
         default=str(_ROOT / "outputs" / "famiano_abundance_evolution.png"),
     )
+    parser.add_argument(
+        "--cloud-config",
+        default=str(_ROOT / "config" / "cloud.json"),
+        help="Cloud config used to derive the plot title's n0/T (and Model A/B "
+             "tag, if they match). NOTE: this reads whatever this file "
+             "currently contains, not necessarily what produced --csv -- pass "
+             "the config actually used for that run if it's since changed.",
+    )
+    parser.add_argument(
+        "--jet-config",
+        default=str(_ROOT / "config" / "jet.json"),
+        help="Jet config used to derive the plot title's species/energy.",
+    )
     return parser.parse_args()
 
 
@@ -199,4 +279,9 @@ if __name__ == "__main__":
     args = _parse_args()
     sys.path.insert(0, str(_ROOT))
     df = _read_history(Path(args.csv))
-    plot_abundances(df, Path(args.out))
+    with open(args.cloud_config) as f:
+        cloud_cfg = json.load(f)
+    with open(args.jet_config) as f:
+        jet_cfg = json.load(f)
+    title = build_title(cloud_cfg, jet_cfg)
+    plot_abundances(df, Path(args.out), title)
