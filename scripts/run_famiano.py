@@ -56,7 +56,7 @@ from reactions import ReactionLibrary, DWBAStubModel, DeltaAtThermalModel
 from tau_loader import build_tau_models, assign_tau_models_to_library
 from cascade import run_cascade_step
 from timestep import compute_next_dt, estimate_initial_dt, euler_increment
-from decay import apply_decay, DECAY_TABLE
+from decay import apply_decay, decay_dydt, DECAY_TABLE
 from thermonuclear import compute_thermonuclear_dydt
 from rate_library import build_thermonuclear_library
 from jacobian import implicit_euler_step
@@ -566,6 +566,10 @@ def run(args: argparse.Namespace) -> None:
     gamma    = float(solver_cfg.get("gamma", 0.01))
     dt_min   = float(solver_cfg.get("dt_min_s", 1e4))
     dt_max   = float(solver_cfg.get("dt_max_s", 1e11))
+    # Species with Y below this are ignored by the timestep controller, so
+    # physically irrelevant trace species (e.g. 8Li at ~1e-25) can't throttle
+    # dt for the whole network.
+    dt_rel_floor = float(solver_cfg.get("dt_rel_floor", 1e-30))
     max_steps = int(solver_cfg.get("max_steps", 100000))
 
     # Jet on/off intervals: injection (and jet mass loading) is only active
@@ -766,9 +770,21 @@ def run(args: argparse.Namespace) -> None:
             # statement that Model A needs implicit integration), this now
             # uses jacobian.implicit_euler_step() -- one linearized backward-
             # Euler solve per step -- instead of timestep.euler_increment().
+            #
+            # Radioactive decay is folded into this same implicit RHS rather
+            # than operator-split afterwards: species like 8B/8Li (t_1/2 < 1 s)
+            # are produced here AND decay within the step, and the split
+            # "produce for dt, then decay for dt" undershoots their
+            # production/decay equilibrium once dt >> tau. It also means
+            # delta_y below carries the NET change, so compute_next_dt sees
+            # 8B sitting in equilibrium instead of a spurious 100%-per-tau
+            # production rate that pinned dt at gamma*tau(8B) ~ 0.011 s.
             if thermonuclear_enabled and dt > 0.0:
                 def _thermo_rhs(Y_trial: np.ndarray) -> np.ndarray:
-                    return compute_thermonuclear_dydt(state, thermo_lib, Y=Y_trial)
+                    rhs = compute_thermonuclear_dydt(state, thermo_lib, Y=Y_trial)
+                    if decay_enabled:
+                        rhs = rhs + decay_dydt(Y_trial, state.cloud.species)
+                    return rhs
 
                 y_new, delta_y_thermo, _clipped = implicit_euler_step(
                     y=state.cloud.Y,
@@ -838,15 +854,26 @@ def run(args: argparse.Namespace) -> None:
             # rather than explicit Euler because several tracked species
             # (8Li, 8B, 16N) have half-lives far shorter than dt_max_s, which
             # would make forward Euler numerically unstable.
-            if decay_enabled and dt > 0.0:
-                state.cloud.Y = apply_decay(state.cloud.Y, state.cloud.species, dt)
+            # With thermonuclear reactions enabled, decay was already applied
+            # inside the implicit solve above.
+            #
+            # The decay change is added to delta_y (and the post-decay Y is
+            # what the controller sees) so compute_next_dt judges each
+            # species by its net change over the step. Excluding it made a
+            # species in production/decay balance look like it changed by
+            # Y*dt/tau every step, forcing dt down to gamma*tau.
+            if decay_enabled and dt > 0.0 and not thermonuclear_enabled:
+                _Y_pre_decay = state.cloud.Y
+                state.cloud.Y = apply_decay(_Y_pre_decay, state.cloud.species, dt)
+                delta_y = delta_y + (state.cloud.Y - _Y_pre_decay)
 
             # --- Adaptive timestep (Famiano eq. 4) ---
             dt_next = compute_next_dt(
-                y_new=y_new,
+                y_new=state.cloud.Y,
                 delta_y=delta_y,
                 dt_current=dt,
                 gamma=gamma,
+                rel_floor=dt_rel_floor,
                 dt_min=dt_min,
                 dt_max=dt_max,
             )
