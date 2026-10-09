@@ -54,12 +54,13 @@ from state import CloudState, CascadeState, SolverState, NetworkState, SpeciesDa
 from grids import make_energy_grid
 from reactions import ReactionLibrary, DWBAStubModel, DeltaAtThermalModel
 from tau_loader import build_tau_models, assign_tau_models_to_library
-from cascade import run_cascade_step
+from cascade import run_cascade_step, _cloud_mass_fraction_arrays, _electron_number_density
+from stopping import stopping_power
 from timestep import compute_next_dt, estimate_initial_dt, euler_increment
 from decay import apply_decay, decay_dydt, DECAY_TABLE
 from thermonuclear import compute_thermonuclear_dydt
 from rate_library import build_thermonuclear_library
-from jacobian import implicit_euler_step
+from jacobian import robust_implicit_euler_step
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +77,62 @@ log = logging.getLogger("run_famiano")
 def _load_json(path: Path) -> dict:
     with path.open("r") as f:
         return json.load(f)
+
+
+def _jet_mass_rate_msun_per_yr(jet_cfg: dict) -> float:
+    """
+    Jet mass input rate M_dot [M_sun/yr] for the model named by
+    jet.json's mass_rate.use (e.g. "model_A" -> model_A_Msun_per_yr).
+    Falls back to Model B's rate when 'use' is absent, which was the
+    hard-coded behaviour before the selector existed.
+    """
+    mass_rate_cfg = jet_cfg.get("mass_rate", {})
+    model = mass_rate_cfg.get("use", "model_B")
+    key = f"{model}_Msun_per_yr"
+    if key not in mass_rate_cfg:
+        raise KeyError(f"jet.json mass_rate.use = '{model}' but '{key}' is not defined.")
+    return float(mass_rate_cfg[key])
+
+
+# Lower bound on the n-p elastic cross section over ~1-400 MeV (~30 mb near
+# a few hundred MeV), and the number of collisions taken to thermalize a
+# neutron. Used only to decide whether jet-produced neutrons escape.
+_SIGMA_NP_MIN_CM2 = 3.0e-26
+_N_COLLISIONS_TO_THERMALIZE = 20.0
+
+
+def light_product_stopped_mask(
+    state: NetworkState, species: str, energy_edges: np.ndarray, L_cm: float,
+) -> np.ndarray:
+    """
+    Per-energy-bin 0/1 mask: 1 where a nonthermal product of `species`
+    created at that bin's energy stops inside a cloud of length L_cm.
+
+    Charged particles: CSDA range R(E) = sum over bins up to E of
+    dE / stopping_power(E), using the same medium model as the cascade.
+    Neutrons: no Coulomb stopping, so they are counted as stopped (in every
+    bin) only if even the smallest n-p elastic cross section gives at least
+    _N_COLLISIONS_TO_THERMALIZE collisions across the cloud; otherwise they
+    all escape. The two regimes are far apart for Famiano's models (Model A:
+    ~1e3 collisions; Model B: < 1).
+    """
+    sd = state.species_data[species]
+    n_bins = len(energy_edges) - 1
+    if sd.Z == 0:
+        i_p = state.cloud.species.index("p") if "p" in state.cloud.species else None
+        n_H = state.cloud.density_cm3 * (state.cloud.Y[i_p] if i_p is not None else 0.0)
+        stops = L_cm * n_H * _SIGMA_NP_MIN_CM2 >= _N_COLLISIONS_TO_THERMALIZE
+        return np.full(n_bins, 1.0 if stops else 0.0)
+
+    A_cl, _, X_cl = _cloud_mass_fraction_arrays(state)
+    E_c = 0.5 * (energy_edges[:-1] + energy_edges[1:])
+    eps = stopping_power(
+        A_cl=A_cl, X_cl=X_cl, X_ion=float(state.cloud.ionization_fraction),
+        Z_proj=int(sd.Z), E=E_c, A_proj=int(sd.A),
+        n_e=_electron_number_density(state), T_e=float(state.cloud.temperature_K),
+    )
+    range_cm = np.cumsum(np.diff(energy_edges) / np.maximum(eps, 1e-300))
+    return (range_cm <= L_cm).astype(float)
 
 
 def _load_configs(config_dir: Path, run_cfg_path: Path) -> tuple[dict, dict, dict, dict]:
@@ -325,8 +382,7 @@ def compute_jet_normalization_factor(
     m_avg_g = m_avg_u * _AMU_G
 
     # --- Mass rate [g/s] ---
-    mass_rate_cfg = jet_cfg.get("mass_rate", {})
-    mass_rate_Msun_yr = float(mass_rate_cfg.get("model_B_Msun_per_yr", 1e-6))
+    mass_rate_Msun_yr = _jet_mass_rate_msun_per_yr(jet_cfg)
     mass_rate_g_s = mass_rate_Msun_yr * _MSUN_G / _S_PER_YR
 
     # --- Cloud cross-section area [cm²] ---
@@ -499,10 +555,7 @@ def run(args: argparse.Namespace) -> None:
     # Cloud mass and jet mass rate for ΔM/M₀ tracking.
     # M₀ is the initial cloud mass from geometry + density (not the total BLR mass).
     _M0_g = compute_cloud_initial_mass_g(cloud_cfg, state)
-    _mass_rate_g_s = (
-        float(jet_cfg.get("mass_rate", {}).get("model_B_Msun_per_yr", 1e-6))
-        * _MSUN_G / _S_PER_YR
-    )
+    _mass_rate_g_s = _jet_mass_rate_msun_per_yr(jet_cfg) * _MSUN_G / _S_PER_YR
     log.info(
         "Cloud mass M₀ = %.3e g (%.3e M_sun) | jet mass rate = %.3e g/s | "
         "ΔM/M₀ rate = %.3e s⁻¹",
@@ -614,6 +667,21 @@ def run(args: argparse.Namespace) -> None:
     else:
         log.info("Radioactive decay disabled via config/run.json 'decay.enabled'.")
 
+    # How jet-cloud products lighter than A=6 (n, d, t, 3He) are treated:
+    # "escape" (default; the original thin-target assumption) or "range"
+    # (stop in the cloud where their range is shorter than the cloud).
+    _light_product_mode = run_cfg.get("cascade", {}).get("light_products", "escape")
+    if _light_product_mode not in ("escape", "range"):
+        raise ValueError(f"run.json cascade.light_products must be 'escape' or 'range', got {_light_product_mode!r}")
+    if _light_product_mode == "range":
+        for _sp in ("n", "d", "t", "3He"):
+            if _sp in state.species_data:
+                _frac = light_product_stopped_mask(state, _sp, energy_edges, _L_cloud_cm).mean()
+                log.info("Light product %-3s: stops in cloud in %.0f%% of energy bins (L = %.2e cm).",
+                         _sp, 100 * _frac, _L_cloud_cm)
+    else:
+        log.info("Light jet-cloud products (n, d, t, 3He) escape the cloud (cascade.light_products = 'escape').")
+
     import csv
     fieldnames = ["step", "t_s", "delta_m_over_m0"] + list(state.cloud.species)
 
@@ -633,6 +701,7 @@ def run(args: argparse.Namespace) -> None:
         dtype=float,
     )
     _jet_sp_set = set(_injection_rates.keys())
+    _thermo_path_counts: dict[str, int] = {}  # implicit-solve path tally between log lines
 
     t_start_wall = time.time()
     log.info("Starting evolution: t_end = %.3e s, max_steps = %d", state.solver.t_end_s, max_steps)
@@ -732,80 +801,95 @@ def run(args: argparse.Namespace) -> None:
                 cloud_length_cm=_L_cloud_cm,
             )
 
-            # Thermalize heavy non-thermal reaction products (A≥6) into Y_cloud.
-            # Light products (n, d, t, 3He) have long stopping ranges in the thin-target
-            # cloud and exit without thermalizing.  Heavy recoils (7Li, 6Li) stop.
+            # Thermalize non-thermal reaction products into Y_cloud.
+            # Heavy recoils (A≥6: 6Li, 7Li, 7Be) always stop. Light products
+            # (n, d, t, 3He) either all escape ("escape": the original thin-
+            # target Model B assumption) or, with "range", stop in the energy
+            # bins whose range is shorter than the cloud -- in Model A's
+            # ~1e5 g/cm^2 cloud that is all of them. Products are deposited
+            # directly; their own secondary reactions while slowing are not
+            # followed (Famiano eq. 12 terms 3+), in either mode.
             # Jet species (p, 4He) are handled by the density-evolution step below.
             for _sp_nt, _nt_vals in result.injected_spectra.items():
                 if _sp_nt in _jet_sp_set:
                     continue
+                if _sp_nt not in state.cloud.species or dt <= 0.0:
+                    continue
                 if _species_A.get(_sp_nt, 0) < 6:
-                    continue  # light products exit the cloud
-                if _sp_nt in state.cloud.species and dt > 0.0:
-                    _c_idx_nt = state.cloud.species.index(_sp_nt)
-                    result.dYdt_cloud[_c_idx_nt] += float(np.sum(_nt_vals)) / dt
+                    if _light_product_mode == "escape":
+                        continue
+                    _stopped = light_product_stopped_mask(state, _sp_nt, energy_edges, _L_cloud_cm)
+                    _amount_th = float(np.dot(_nt_vals, _stopped))
+                else:
+                    _amount_th = float(np.sum(_nt_vals))
+                _c_idx_nt = state.cloud.species.index(_sp_nt)
+                result.dYdt_cloud[_c_idx_nt] += _amount_th / dt
 
-            # --- Explicit Euler abundance update (nuclear reactions) ---
-            y_new, delta_y = euler_increment(
-                y=state.cloud.Y,
-                dydt=result.dYdt_cloud,
-                dt=dt,
-                enforce_nonnegative=True,
-            )
-            state.cloud.Y = y_new
+            _Y_step_start = state.cloud.Y.copy()
 
-            # --- Thermonuclear reactions (operator split, IMPLICIT Euler) ---
-            # Unlike the cascade above, every reactant and product here is
-            # already a cloud species (see core/thermonuclear.py), so each
-            # reaction conserves Sum_i A_i Y_i exactly on its own -- no
-            # density_cm3 credit is needed the way the cascade's jet-sourced
-            # baryons need one below. y_new/delta_y are updated in place so
-            # the adaptive-timestep call further down sees the combined
-            # cascade+thermonuclear change, not just the cascade's alone.
-            #
-            # Explicit Euler was tried first here and confirmed stiff at
-            # Famiano's actual Model A conditions (T9=0.6, n=1e18 cm^-3):
-            # nearly every tracked species clipped to zero on nearly every
-            # step, even at dt_min. Per Famiano eq. (2) (and Section 3's own
-            # statement that Model A needs implicit integration), this now
-            # uses jacobian.implicit_euler_step() -- one linearized backward-
-            # Euler solve per step -- instead of timestep.euler_increment().
-            #
-            # Radioactive decay is folded into this same implicit RHS rather
-            # than operator-split afterwards: species like 8B/8Li (t_1/2 < 1 s)
-            # are produced here AND decay within the step, and the split
-            # "produce for dt, then decay for dt" undershoots their
-            # production/decay equilibrium once dt >> tau. It also means
-            # delta_y below carries the NET change, so compute_next_dt sees
-            # 8B sitting in equilibrium instead of a spurious 100%-per-tau
-            # production rate that pinned dt at gamma*tau(8B) ~ 0.011 s.
-            if thermonuclear_enabled and dt > 0.0:
+            if not (thermonuclear_enabled and dt > 0.0):
+                # --- Explicit Euler abundance update (jet-cloud reactions) ---
+                # Used when the thermonuclear network is off (Model B): the
+                # jet-cloud rates are slow compared with any dt the
+                # controller picks, so explicit Euler is adequate.
+                y_new, delta_y = euler_increment(
+                    y=state.cloud.Y,
+                    dydt=result.dYdt_cloud,
+                    dt=dt,
+                    enforce_nonnegative=True,
+                )
+                state.cloud.Y = y_new
+            else:
+                # --- Jet-cloud + thermonuclear + decay in ONE implicit solve ---
+                # The jet-cloud changes enter the backward-Euler RHS instead of
+                # being added explicitly beforehand: net production as a
+                # constant source, net destruction of a cloud species as a
+                # rate proportional to its abundance (so it can never drive it
+                # negative). Adding them first (the old order) linearized the
+                # thermonuclear solve around a state inflated by a whole
+                # step's worth of jet products -- 34% more d and 30% more n
+                # at dt = 2 s in the Model A run -- and the d+d / d+t terms
+                # (quadratic in d) then gave dt-dependent balance values for
+                # n, t and 8Li. That made large steps knock them down by up
+                # to 40%, and the timestep controller kept throwing dt back to
+                # ~0.02 s. With the source inside the solve, a steady state is
+                # steady at any dt.
+                #
+                # Thermonuclear reactions and decay are solved implicitly
+                # because they are stiff at Model A conditions (explicit
+                # Euler clipped nearly every species at dt_min). Decay is in
+                # the same RHS so short-lived species (8B, 8Li) reach their
+                # production/decay balance for any dt.
+                _S_casc = result.dYdt_cloud
+                _src = np.where(_S_casc > 0.0, _S_casc, 0.0)
+                _Y0 = state.cloud.Y
+                _kappa = np.where((_S_casc < 0.0) & (_Y0 > 0.0), -_S_casc / np.where(_Y0 > 0.0, _Y0, 1.0), 0.0)
+
                 def _thermo_rhs(Y_trial: np.ndarray) -> np.ndarray:
                     rhs = compute_thermonuclear_dydt(state, thermo_lib, Y=Y_trial)
                     if decay_enabled:
                         rhs = rhs + decay_dydt(Y_trial, state.cloud.species)
-                    return rhs
+                    return rhs + _src - _kappa * Y_trial
 
-                y_new, delta_y_thermo, _clipped = implicit_euler_step(
+                # One linearized backward-Euler solve when that stays
+                # non-negative; otherwise Newton-iterated backward Euler, then
+                # sub-steps (see jacobian.robust_implicit_euler_step).
+                y_new, delta_y, _clipped, _J_diag, _thermo_info = robust_implicit_euler_step(
                     y=state.cloud.Y,
                     rhs_func=_thermo_rhs,
                     dt=dt,
-                    enforce_nonnegative=True,
+                    significant_floor=dt_rel_floor,
                 )
-                if np.any(_clipped):
-                    # Even the linearized implicit solve can clip a fast-
-                    # depleting trace species if the local linearization
-                    # (Jacobian evaluated at Y(t), not iterated) isn't a
-                    # good approximation over this dt. Expected to be rare;
-                    # frequent clipping here would mean the timestep itself
-                    # needs shrinking, or a fully Newton-iterated solve.
+                _thermo_path_counts[_thermo_info["path"]] = _thermo_path_counts.get(_thermo_info["path"], 0) + 1
+                # Destruction lifetime of each species (-1/J_ii), for the
+                # timestep controller.
+                _tau_destroy = 1.0 / np.maximum(-_J_diag, 1e-300)
+                if np.any(_clipped & (np.abs(state.cloud.Y) > dt_rel_floor)):
                     log.warning(
-                        "step %d: implicit thermonuclear update still clipped "
-                        "to zero for %s (linearization error at dt=%.3e s).",
+                        "step %d: implicit update still clipped to zero for %s at dt=%.3e s.",
                         step, [state.cloud.species[i] for i in np.flatnonzero(_clipped)], dt,
                     )
                 state.cloud.Y = y_new
-                delta_y = delta_y + delta_y_thermo
 
             # --- Credit the cascade's baryon injection to density_cm3 ---
             # result.dYdt_cloud already moved mass between species (targets
@@ -819,7 +903,13 @@ def run(args: argparse.Namespace) -> None:
             # reacted/thermalized baryon was added to Y without ever being
             # credited to the baryon budget -- manufacturing mass for free.
             _n_before_cascade = state.cloud.density_cm3
-            _frac_cascade = dt * float(np.dot(_A_cloud, result.dYdt_cloud))
+            if thermonuclear_enabled and dt > 0.0:
+                # Thermonuclear reactions and decay conserve Sum_i A_i Y_i
+                # exactly, so the whole of this step's baryon change came from
+                # the jet-cloud terms inside the implicit solve.
+                _frac_cascade = float(np.dot(_A_cloud, state.cloud.Y - _Y_step_start))
+            else:
+                _frac_cascade = dt * float(np.dot(_A_cloud, result.dYdt_cloud))
             _frac_cascade = max(_frac_cascade, -0.999)  # guard against a pathological negative rate
             state.cloud.density_cm3 = _n_before_cascade * (1.0 + _frac_cascade)
             state.cloud.Y = state.cloud.Y / (1.0 + _frac_cascade)
@@ -868,7 +958,24 @@ def run(args: argparse.Namespace) -> None:
                 delta_y = delta_y + (state.cloud.Y - _Y_pre_decay)
 
             # --- Adaptive timestep (Famiano eq. 4) ---
-            dt_next = compute_next_dt(
+            # Species whose destruction lifetime is shorter than the step the
+            # rest of the network allows are left out of the ratio test (see
+            # compute_next_dt): the implicit solve already puts them at their
+            # production/destruction balance. Without this, ⁸Li (t½ = 0.84 s,
+            # Y ~ 1e-17) pinned dt at ~0.03-0.15 s in the Model A run.
+            # Lifetimes come from the thermonuclear Jacobian (which includes
+            # decay); with thermonuclear reactions off, from decay alone.
+            if thermonuclear_enabled and dt > 0.0:
+                _tau_for_dt = _tau_destroy
+            elif decay_enabled:
+                _tau_for_dt = np.array(
+                    [DECAY_TABLE[sp].half_life_s / np.log(2.0) if sp in DECAY_TABLE else np.inf
+                     for sp in state.cloud.species],
+                    dtype=float,
+                )
+            else:
+                _tau_for_dt = None
+            dt_next, _dt_limiter, _n_dt_excluded = compute_next_dt(
                 y_new=state.cloud.Y,
                 delta_y=delta_y,
                 dt_current=dt,
@@ -876,6 +983,8 @@ def run(args: argparse.Namespace) -> None:
                 rel_floor=dt_rel_floor,
                 dt_min=dt_min,
                 dt_max=dt_max,
+                destruction_lifetime_s=_tau_for_dt,
+                return_limiter=True,
             )
 
             # --- Advance time and track ΔM/M₀ ---
@@ -896,10 +1005,15 @@ def run(args: argparse.Namespace) -> None:
 
             if step % write_every == 0:
                 log.info(
-                    "step %6d | t = %.4e s | dt = %.4e s | ΔM/M₀ = %.3e | Y_p = %.4e",
+                    "step %6d | t = %.4e s | dt = %.4e s | ΔM/M₀ = %.3e | Y_p = %.4e"
+                    " | dt set by %s (%d fast species skipped) | thermo solves %s",
                     step, state.solver.t_s, dt_next, delta_m_over_m0,
                     state.cloud.get_abundance("p") if "p" in state.cloud.species else float("nan"),
+                    state.cloud.species[_dt_limiter] if _dt_limiter is not None else "none",
+                    _n_dt_excluded,
+                    dict(_thermo_path_counts) or "-",
                 )
+                _thermo_path_counts.clear()
             # Write every step through _fine_write_until_step (recent jet
             # transition) even when it falls between write_every_n_steps
             # rows, on top of the normal coarse cadence -- see

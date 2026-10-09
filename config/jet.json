@@ -40,9 +40,10 @@
   },
 
   "mass_rate": {
+    "use": "model_A",
     "model_A_Msun_per_yr": 0.1,
     "model_B_Msun_per_yr": 1.0e-6,
-    "_comment": "Used for model dynamics (cloud mass growth) — not yet coupled to cascade"
+    "_comment": "'use' selects which rate run_famiano.py applies (model_A or model_B); it sets both the jet injection normalization and the cloud mass growth. Keep it consistent with cloud.json."
   },
 
   "only_treat_A_lt_8_as_nonthermal": true,

@@ -83,7 +83,9 @@ def compute_next_dt(
     dt_min: Optional[float] = None,
     dt_max: Optional[float] = None,
     max_growth: Optional[float] = 5.0,
-) -> float:
+    destruction_lifetime_s: Optional[np.ndarray] = None,
+    return_limiter: bool = False,
+):
     """
     Compute the next timestep using the Famiano equation (4) prescription.
 
@@ -110,6 +112,23 @@ def compute_next_dt(
         Optional multiplicative cap on timestep growth:
             h_{n+1} <= max_growth * h_n
         Helps avoid sudden jumps when the solution temporarily becomes quiet.
+    destruction_lifetime_s
+        Optional per-species destruction lifetime tau_i [s] (e.g. from the
+        implicit step's Jacobian diagonal, tau_i = -1/J_ii). When given,
+        a species is dropped from the ratio test if tau_i is shorter than
+        the step the remaining species would allow: within such a step it
+        relaxes to its production/destruction balance, which the implicit
+        solver computes correctly for any dt, and that balance only moves
+        as fast as its sources -- which are themselves still controlled.
+        Species are dropped in order of how strongly they limit dt, so a
+        short-lived trace species (8Li, t_1/2 = 0.84 s) can no longer pin
+        dt far below its lifetime when its step-to-step changes are
+        dominated by operator-splitting noise rather than real evolution.
+        The growth cap is applied after this test, not inside it.
+    return_limiter
+        If True, return (dt_next, limiting_index, n_excluded) instead of
+        dt_next alone; limiting_index is the species index that set dt
+        (None if no species was eligible).
 
     Returns
     -------
@@ -174,10 +193,24 @@ def compute_next_dt(
 
     valid = (y_abs > rel_floor) & (d_abs > abs_floor) & (y_old_abs > rel_floor)
 
+    limiter: Optional[int] = None
+    n_excluded = 0
     if np.any(valid):
+        idx_valid = np.flatnonzero(valid)
         ratios = y_abs[valid] / d_abs[valid]
-        ratio_min = np.min(ratios)
-        dt_next = gamma * dt_current * ratio_min
+        order = np.argsort(ratios)
+        k = 0
+        if destruction_lifetime_s is not None:
+            tau = np.asarray(destruction_lifetime_s, dtype=float)[idx_valid]
+            while k < len(order) - 1:
+                dt_rest = gamma * dt_current * ratios[order[k + 1]]
+                if tau[order[k]] < dt_rest:
+                    k += 1
+                else:
+                    break
+        n_excluded = k
+        limiter = int(idx_valid[order[k]])
+        dt_next = gamma * dt_current * ratios[order[k]]
     else:
         # Nothing changed in a numerically meaningful way, so do not force
         # the timestep to collapse or explode.
@@ -188,7 +221,10 @@ def compute_next_dt(
             raise ValueError("max_growth must be > 1 if provided")
         dt_next = min(dt_next, max_growth * dt_current)
 
-    return _clip_dt(dt_next, dt_min=dt_min, dt_max=dt_max)
+    dt_next = _clip_dt(dt_next, dt_min=dt_min, dt_max=dt_max)
+    if return_limiter:
+        return dt_next, limiter, n_excluded
+    return dt_next
 
 
 def estimate_initial_dt(

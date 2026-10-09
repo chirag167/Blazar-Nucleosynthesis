@@ -101,9 +101,15 @@ def _detect_model_label(cloud_cfg: dict, n0: float, T: float) -> str:
         block = cloud_cfg.get(name)
         if not isinstance(block, dict):
             continue
+        # Geometry must match too: n0/T alone labelled a Model-A-density cloud
+        # with Model B's 5e11 cm size (and jet rate) as "Model A".
         if (
             np.isclose(float(block.get("density_cm3", np.nan)), n0, rtol=1e-6)
             and np.isclose(float(block.get("temperature_K", np.nan)), T, rtol=1e-6)
+            and np.isclose(float(block.get("cloud_length_cm", np.nan)),
+                           float(cloud_cfg.get("cloud_length_cm", np.nan)), rtol=1e-6)
+            and np.isclose(float(block.get("cloud_diameter_cm", np.nan)),
+                           float(cloud_cfg.get("cloud_diameter_cm", np.nan)), rtol=1e-6)
         ):
             return f" ({tag})"
     return ""

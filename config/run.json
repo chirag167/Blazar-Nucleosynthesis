@@ -28,8 +28,10 @@
   "time": {
     "t0_s": 0.0,
     "tmax_s": 1.0e5,
-    "jet_intervals": [[0, 1.0e4], [1.3e4, 2.3e4], [2.6e4, 3.6e4]],
-    "dt_s": 1.0,
+    "jet_intervals": [[0, 1.0e5]],
+    "_jet_intervals_previous": [[0, 1.0e4], [1.3e4, 2.3e4], [2.6e4, 3.6e4]],
+    "_comment_model_A": "Famiano Model A: jet on continuously, run to 1e4 s (Fig. 2 axis, Delta M/M0 ~ 40). The previous on/off schedule is kept above for reference.",
+    "dt_s": 1.0e-2,
     "_comment": "tmax_s = 1e5 s (~1 day); Famiano (2002) bottom x-axis is in seconds (~10^4 s); dt_s is initial guess only. jet_intervals: list of [on_s, off_s] pairs during which jet injection (and mass loading) is active; the jet can be switched on and off multiple times by adding more pairs, e.g. [[0.0, 1.0e4], [3.0e4, 5.0e4]]. Outside all intervals the cascade (reactions among already-produced non-thermal species + radioactive decay) keeps running until tmax_s. For backward compatibility, a legacy single 'jet_stop_s' value is still honored as [[t0_s, jet_stop_s]] if 'jet_intervals' is absent."
   },
 
@@ -59,6 +61,11 @@
     "history_csv": "outputs/abundance_history.csv",
     "final_state_json": "outputs/final_state.json",
     "write_every_n_steps": 100
+  },
+
+  "cascade": {
+    "light_products": "range",
+    "_comment": "'escape': jet-cloud products lighter than A=6 (n, d, t, 3He) always leave the cloud (original thin-target assumption). 'range': they stop in the cloud wherever their range is shorter than cloud_length_cm (all of them in Model A; low-energy ones even in Model B)."
   },
 
   "thermonuclear": {
