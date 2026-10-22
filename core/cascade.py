@@ -60,6 +60,12 @@ class CascadeStepResult:
     dYdt_cloud: np.ndarray
     injected_spectra: Dict[str, np.ndarray]
     diagnostics: Dict[str, Any]
+    # Filled only when compute_cascade_step(track_processes=True):
+    #   "cloud":      {process label: dY/dt contribution aligned with cloud.species}
+    #   "nonthermal": {reaction label: {species: spectrum injected by that reaction}}
+    # The "cloud" entries sum to dYdt_cloud, and for each non-jet species the
+    # "nonthermal" spectra sum to injected_spectra[species].
+    processes: Optional[Dict[str, Dict[str, Any]]] = None
 
 
 def _require_species_data(state: NetworkState, species: str) -> Tuple[int, int]:
@@ -254,17 +260,25 @@ def _accumulate_products(
     injected_spectra: Dict[str, np.ndarray],
     dYdt_cloud: np.ndarray,
     dt_s: float,
+    processes: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> None:
     """
     Accumulate product source terms from one injected projectile bin.
 
     Non-thermal descendants are injected into spectra.
     Thermal / heavy descendants are added directly to the cloud abundance RHS.
+    If `processes` is given, the same contributions are also recorded per
+    reaction (see CascadeStepResult.processes).
     """
     _, _, _, n_prod_bins = yield_tensor.shape
     prod_index = {sp: i for i, sp in enumerate(product_species_order)}
 
     for i_rxn, rxn in enumerate(reactions_for_projectile):
+        rxn_cloud = rxn_nonthermal = None
+        if processes is not None:
+            rxn_cloud = processes["cloud"].setdefault(rxn.name(), np.zeros_like(dYdt_cloud))
+            rxn_nonthermal = processes["nonthermal"].setdefault(rxn.name(), {})
+
         # Target destruction contribution to cloud abundances.
         # Number of reaction events is read off the residual product, whose
         # stoichiometric multiplicity is always 1 (products_stoich always adds
@@ -287,6 +301,8 @@ def _accumulate_products(
         t_idx = _ensure_cloud_species_index(state, rxn.target)
         if t_idx is not None and dt_s > 0.0 and not rxn.is_elastic:
             dYdt_cloud[t_idx] -= rxn_events / dt_s
+            if rxn_cloud is not None:
+                rxn_cloud[t_idx] -= rxn_events / dt_s
 
         # Product creation contribution.
         for p_idx, p_species in enumerate(product_species_order):
@@ -304,15 +320,21 @@ def _accumulate_products(
                 continue
 
             if prod_obj.can_continue_nonthermal:
-                injected_spectra.setdefault(p_species, np.zeros(n_prod_bins, dtype=float))
-                injected_spectra[p_species] += injected_amount * np.sum(
+                spectrum = injected_amount * np.sum(
                     yield_tensor[i_rxn, :, p_idx, :],
                     axis=0,
                 )
+                injected_spectra.setdefault(p_species, np.zeros(n_prod_bins, dtype=float))
+                injected_spectra[p_species] += spectrum
+                if rxn_nonthermal is not None:
+                    rxn_nonthermal.setdefault(p_species, np.zeros(n_prod_bins, dtype=float))
+                    rxn_nonthermal[p_species] += spectrum
             else:
                 c_idx = _ensure_cloud_species_index(state, p_species)
                 if c_idx is not None and dt_s > 0.0:
                     dYdt_cloud[c_idx] += produced / dt_s
+                    if rxn_cloud is not None:
+                        rxn_cloud[c_idx] += produced / dt_s
 
 
 def _projectile_survival_reinjection(
@@ -353,6 +375,7 @@ def compute_cascade_step(
     energy_edges_mev: np.ndarray,
     dt_s: Optional[float] = None,
     cloud_length_cm: Optional[float] = None,
+    track_processes: bool = False,
 ) -> CascadeStepResult:
     """
     Compute one cascade bookkeeping pass.
@@ -373,6 +396,9 @@ def compute_cascade_step(
         integral is truncated at this path length (thin-target approximation),
         so the yield reflects only the cloud traversal rather than the full
         stopping range.  Required for Famiano's thin BLR cloud (Model B).
+    track_processes : bool
+        If True, also fill CascadeStepResult.processes with the per-reaction
+        breakdown of dYdt_cloud and of the injected non-thermal spectra.
 
     Returns
     -------
@@ -409,6 +435,9 @@ def compute_cascade_step(
     diag: Dict[str, Any] = {
         "projectiles": {},
     }
+    processes: Optional[Dict[str, Dict[str, Any]]] = (
+        {"cloud": {}, "nonthermal": {}} if track_processes else None
+    )
 
     for projectile in state.cascade.projectile_species():
         spectrum = state.cascade.get_spectrum(projectile)
@@ -491,6 +520,7 @@ def compute_cascade_step(
                 injected_spectra=injected_spectra,
                 dYdt_cloud=dYdt_cloud,
                 dt_s=float(dt_s),
+                processes=processes,
             )
 
             # Thermalized projectile source: jet particles that slow to thermal
@@ -502,6 +532,10 @@ def compute_cascade_step(
                 proj_idx = _ensure_cloud_species_index(state, projectile)
                 if proj_idx is not None:
                     dYdt_cloud[proj_idx] += amount * s_th / float(dt_s)
+                    if processes is not None:
+                        label = f"{projectile} jet thermalized"
+                        processes["cloud"].setdefault(label, np.zeros_like(dYdt_cloud))
+                        processes["cloud"][label][proj_idx] += amount * s_th / float(dt_s)
 
         injected_spectra.setdefault(projectile, np.zeros(n_bins, dtype=float))
         injected_spectra[projectile] += projectile_out
@@ -519,6 +553,7 @@ def compute_cascade_step(
         dYdt_cloud=dYdt_cloud,
         injected_spectra=injected_spectra,
         diagnostics=diag,
+        processes=processes,
     )
 
 
@@ -598,6 +633,7 @@ def run_cascade_step(
     update_cloud: bool = True,
     update_spectra: bool = True,
     cloud_length_cm: Optional[float] = None,
+    track_processes: bool = False,
 ) -> CascadeStepResult:
     """
     High-level convenience wrapper:
@@ -612,6 +648,7 @@ def run_cascade_step(
         energy_edges_mev=energy_edges_mev,
         dt_s=dt_s,
         cloud_length_cm=cloud_length_cm,
+        track_processes=track_processes,
     )
 
     store_cascade_step_in_state(state, result)

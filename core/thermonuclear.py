@@ -190,18 +190,76 @@ def compute_thermonuclear_dydt(
     np.ndarray
         dY/dt contribution, shape (len(state.cloud.species),).
     """
-    if T9 is None:
-        T9 = T9_from_state(state)
-
     Y_vec = state.cloud.Y if Y is None else np.asarray(Y, dtype=float)
     dYdt = np.zeros_like(Y_vec, dtype=float)
 
+    for rxn, dn_dt, density, species_index in _reaction_event_rates(state, library, T9, Y_vec):
+        for sp, mult in rxn.reactants_stoich.items():
+            idx = species_index.get(sp)
+            if idx is not None:
+                dYdt[idx] -= mult * dn_dt / density
+
+        for sp, mult in rxn.products_stoich.items():
+            idx = species_index.get(sp)
+            if idx is not None:
+                dYdt[idx] += mult * dn_dt / density
+
+    return dYdt
+
+
+def thermonuclear_dydt_by_reaction(
+    state: NetworkState,
+    library: ThermonuclearLibrary,
+    T9: Optional[float] = None,
+    Y: Optional[Array] = None,
+) -> Dict[str, Array]:
+    """
+    Same physics as compute_thermonuclear_dydt(), split by reaction:
+    {rxn.name(): dY/dt contribution aligned with state.cloud.species}.
+
+    Only reactions with a non-zero rate at Y appear. Summing the values
+    gives compute_thermonuclear_dydt(state, library, T9, Y) up to
+    floating-point summation order. Used for the per-process abundance
+    budget (core/process_budget.py), not by the solver.
+    """
+    Y_vec = state.cloud.Y if Y is None else np.asarray(Y, dtype=float)
+    out: Dict[str, Array] = {}
+
+    for rxn, dn_dt, density, species_index in _reaction_event_rates(state, library, T9, Y_vec):
+        vec = out.setdefault(rxn.name(), np.zeros_like(Y_vec, dtype=float))
+        for sp, mult in rxn.reactants_stoich.items():
+            idx = species_index.get(sp)
+            if idx is not None:
+                vec[idx] -= mult * dn_dt / density
+
+        for sp, mult in rxn.products_stoich.items():
+            idx = species_index.get(sp)
+            if idx is not None:
+                vec[idx] += mult * dn_dt / density
+
+    return out
+
+
+def _reaction_event_rates(
+    state: NetworkState,
+    library: ThermonuclearLibrary,
+    T9: Optional[float],
+    Y_vec: Array,
+):
+    """
+    Yield (rxn, R, density, species_index) for every reaction with a
+    positive event rate R = n_i * n_j * <sigma*v> / (1 + delta_ij)
+    [reactions cm^-3 s^-1] at abundances Y_vec.
+    """
     if not library.reactions:
-        return dYdt
+        return
+
+    if T9 is None:
+        T9 = T9_from_state(state)
 
     density = float(state.cloud.density_cm3)
     if density <= 0.0:
-        return dYdt
+        return
 
     species_index = {sp: i for i, sp in enumerate(state.cloud.species)}
 
@@ -231,16 +289,4 @@ def compute_thermonuclear_dydt(
         if rate <= 0.0:
             continue
 
-        dn_dt = rate  # per reaction event consuming/producing at stoich mult below
-
-        for sp, mult in rxn.reactants_stoich.items():
-            idx = species_index.get(sp)
-            if idx is not None:
-                dYdt[idx] -= mult * dn_dt / density
-
-        for sp, mult in rxn.products_stoich.items():
-            idx = species_index.get(sp)
-            if idx is not None:
-                dYdt[idx] += mult * dn_dt / density
-
-    return dYdt
+        yield rxn, rate, density, species_index

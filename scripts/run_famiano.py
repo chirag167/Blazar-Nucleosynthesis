@@ -57,8 +57,9 @@ from tau_loader import build_tau_models, assign_tau_models_to_library
 from cascade import run_cascade_step, _cloud_mass_fraction_arrays, _electron_number_density
 from stopping import stopping_power
 from timestep import compute_next_dt, estimate_initial_dt, euler_increment
-from decay import apply_decay, decay_dydt, DECAY_TABLE
-from thermonuclear import compute_thermonuclear_dydt
+from decay import apply_decay, decay_dydt, decay_dydt_by_parent, DECAY_TABLE
+from thermonuclear import compute_thermonuclear_dydt, thermonuclear_dydt_by_reaction
+from process_budget import ProcessBudget, THERMONUCLEAR, DECAY, JET_CLOUD, MIXING, SOLVER
 from rate_library import build_thermonuclear_library
 from jacobian import robust_implicit_euler_step
 
@@ -287,6 +288,44 @@ def _write_history_row(
     row.update({sp: float(y) for sp, y in zip(state.cloud.species, state.cloud.Y)})
     writer.writerow(row)
     fh.flush()
+
+
+def _record_solve_budget(
+    budget: ProcessBudget,
+    state: NetworkState,
+    cascade_rates: dict[str, np.ndarray],
+    cascade_scale: np.ndarray | float,
+    thermo_lib,
+    decay_enabled: bool,
+    y0: np.ndarray,
+    y_new: np.ndarray,
+    dt: float,
+) -> None:
+    """
+    Log one step's abundance update (y0 -> y_new) in the budget, by process.
+
+    Thermonuclear and decay terms are dt * rate at y_new (the backward-Euler
+    evaluation point). Cascade terms are dt * rate * cascade_scale, where
+    cascade_scale reproduces how the solve applied them (see the call
+    site). Whatever the solve did beyond these terms -- the linearized step
+    only matches backward Euler to first order, and clipping/sub-stepping
+    can differ further -- is logged as "solver residual", so the logged
+    terms always sum to y_new - y0.
+    """
+    parts: dict[tuple[str, str], np.ndarray] = {}
+    for label, rate in cascade_rates.items():
+        parts[(JET_CLOUD, label)] = dt * rate * cascade_scale
+    if thermo_lib is not None:
+        for label, rate in thermonuclear_dydt_by_reaction(state, thermo_lib, Y=y_new).items():
+            parts[(THERMONUCLEAR, label)] = dt * rate
+    if decay_enabled:
+        for parent, rate in decay_dydt_by_parent(y_new, state.cloud.species).items():
+            parts[(DECAY, f"{parent} decay")] = dt * rate
+
+    residual = (y_new - y0) - sum(parts.values(), np.zeros_like(y0))
+    for (category, label), dy in parts.items():
+        budget.add(category, label, dy)
+    budget.add(SOLVER, "solver residual", residual)
 
 
 # ---------------------------------------------------------------------------
@@ -613,6 +652,11 @@ def run(args: argparse.Namespace) -> None:
     # physics. For this many steps after each transition, write every step
     # instead, then fall back to the normal cadence once things have settled.
     fine_write_steps = int(output_cfg.get("fine_write_steps_after_transition", 300))
+    # Per-process abundance budget (core/process_budget.py), written at the
+    # same times as the history rows. Set "process_budget_csv" to null to
+    # turn it off.
+    _budget_csv = output_cfg.get("process_budget_csv", "outputs/process_budget.csv")
+    out_budget = _ROOT / _budget_csv if _budget_csv else None
     out_csv.parent.mkdir(parents=True, exist_ok=True)
 
     solver_cfg = run_cfg.get("solver", {})
@@ -701,6 +745,23 @@ def run(args: argparse.Namespace) -> None:
         dtype=float,
     )
     _jet_sp_set = set(_injection_rates.keys())
+
+    def _thermalized_amount(sp: str, spectrum: np.ndarray, masks: dict) -> float | None:
+        """
+        Amount of a non-thermal product spectrum that stops in the cloud,
+        or None if this species is not deposited (jet species, untracked
+        species, or light products in "escape" mode). `masks` caches
+        light_product_stopped_mask per species within one step.
+        """
+        if sp in _jet_sp_set or sp not in state.cloud.species:
+            return None
+        if _species_A.get(sp, 0) < 6:
+            if _light_product_mode == "escape":
+                return None
+            if sp not in masks:
+                masks[sp] = light_product_stopped_mask(state, sp, energy_edges, _L_cloud_cm)
+            return float(np.dot(spectrum, masks[sp]))
+        return float(np.sum(spectrum))
     _thermo_path_counts: dict[str, int] = {}  # implicit-solve path tally between log lines
 
     t_start_wall = time.time()
@@ -710,6 +771,10 @@ def run(args: argparse.Namespace) -> None:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()
         _write_history_row(fh, writer, state, state.solver.t_s, 0, delta_m_over_m0)
+        _budget = (
+            ProcessBudget(state.cloud.species, out_budget, state.solver.t_s)
+            if out_budget is not None else None
+        )
 
         step = 0
         while not state.solver.done and step < max_steps:
@@ -799,6 +864,7 @@ def run(args: argparse.Namespace) -> None:
                 update_cloud=False,   # we apply the Euler step manually below
                 update_spectra=False, # steady-state: spectrum is reset each step
                 cloud_length_cm=_L_cloud_cm,
+                track_processes=_budget is not None,
             )
 
             # Thermalize non-thermal reaction products into Y_cloud.
@@ -810,20 +876,27 @@ def run(args: argparse.Namespace) -> None:
             # directly; their own secondary reactions while slowing are not
             # followed (Famiano eq. 12 terms 3+), in either mode.
             # Jet species (p, 4He) are handled by the density-evolution step below.
+            _stopped_masks: dict = {}
             for _sp_nt, _nt_vals in result.injected_spectra.items():
-                if _sp_nt in _jet_sp_set:
+                _amount_th = _thermalized_amount(_sp_nt, _nt_vals, _stopped_masks)
+                if _amount_th is None or dt <= 0.0:
                     continue
-                if _sp_nt not in state.cloud.species or dt <= 0.0:
-                    continue
-                if _species_A.get(_sp_nt, 0) < 6:
-                    if _light_product_mode == "escape":
-                        continue
-                    _stopped = light_product_stopped_mask(state, _sp_nt, energy_edges, _L_cloud_cm)
-                    _amount_th = float(np.dot(_nt_vals, _stopped))
-                else:
-                    _amount_th = float(np.sum(_nt_vals))
                 _c_idx_nt = state.cloud.species.index(_sp_nt)
                 result.dYdt_cloud[_c_idx_nt] += _amount_th / dt
+
+            # Same deposit, split by the reaction that made each product, for
+            # the process budget: per-reaction cascade dY/dt (target
+            # destroyed + products deposited) plus jet thermalization.
+            _casc_rates: dict[str, np.ndarray] = {}
+            if _budget is not None and dt > 0.0:
+                _casc_rates = {k: v.copy() for k, v in result.processes["cloud"].items()}
+                for _label, _spectra in result.processes["nonthermal"].items():
+                    for _sp_nt, _nt_vals in _spectra.items():
+                        _amount_th = _thermalized_amount(_sp_nt, _nt_vals, _stopped_masks)
+                        if _amount_th is None:
+                            continue
+                        _vec = _casc_rates.setdefault(_label, np.zeros_like(result.dYdt_cloud))
+                        _vec[state.cloud.species.index(_sp_nt)] += _amount_th / dt
 
             _Y_step_start = state.cloud.Y.copy()
 
@@ -838,6 +911,11 @@ def run(args: argparse.Namespace) -> None:
                     dt=dt,
                     enforce_nonnegative=True,
                 )
+                if _budget is not None:
+                    _record_solve_budget(
+                        _budget, state, _casc_rates, 1.0, None, False,
+                        _Y_step_start, y_new, dt,
+                    )
                 state.cloud.Y = y_new
             else:
                 # --- Jet-cloud + thermonuclear + decay in ONE implicit solve ---
@@ -881,6 +959,19 @@ def run(args: argparse.Namespace) -> None:
                     significant_floor=dt_rel_floor,
                 )
                 _thermo_path_counts[_thermo_info["path"]] = _thermo_path_counts.get(_thermo_info["path"], 0) + 1
+                if _budget is not None:
+                    # The solve applied the cascade as _src - _kappa*Y: a
+                    # producing species gets its full rate, a destroyed one
+                    # its rate scaled by y_new/Y0. Each cascade process gets
+                    # the same per-species scale, so they sum to that term.
+                    _casc_scale = np.where(
+                        _S_casc > 0.0, 1.0,
+                        np.where(_kappa > 0.0, y_new / np.where(_Y0 > 0.0, _Y0, 1.0), 0.0),
+                    )
+                    _record_solve_budget(
+                        _budget, state, _casc_rates, _casc_scale, thermo_lib, decay_enabled,
+                        _Y_step_start, y_new, dt,
+                    )
                 # Destruction lifetime of each species (-1/J_ii), for the
                 # timestep controller.
                 _tau_destroy = 1.0 / np.maximum(-_J_diag, 1e-300)
@@ -911,8 +1002,11 @@ def run(args: argparse.Namespace) -> None:
             else:
                 _frac_cascade = dt * float(np.dot(_A_cloud, result.dYdt_cloud))
             _frac_cascade = max(_frac_cascade, -0.999)  # guard against a pathological negative rate
+            _Y_pre = state.cloud.Y.copy()
             state.cloud.density_cm3 = _n_before_cascade * (1.0 + _frac_cascade)
             state.cloud.Y = state.cloud.Y / (1.0 + _frac_cascade)
+            if _budget is not None:
+                _budget.add(MIXING, "dilution (cascade baryons)", state.cloud.Y - _Y_pre)
 
             # --- Constant-volume density evolution (Famiano ρ̇ = K) ---
             # density_cm3 = baryon number density (n_baryons/cm³); Y_i = n_i/n_baryons.
@@ -932,10 +1026,16 @@ def run(args: argparse.Namespace) -> None:
             state.cloud.density_cm3 += _m_bulk_g / (_V_cloud_cm3 * _AMU_G)
             _f_old = _old_density / state.cloud.density_cm3   # old baryon fraction
             _f_new = 1.0 - _f_old                              # new jet baryon fraction
+            _Y_pre = state.cloud.Y.copy()
             state.cloud.Y *= _f_old
+            if _budget is not None:
+                _budget.add(MIXING, "dilution (jet mass)", state.cloud.Y - _Y_pre)
+                _Y_pre = state.cloud.Y.copy()
             for _sp, _Y_jet in _jet_baryon_fractions.items():
                 if _sp in state.cloud.species:
                     state.cloud.Y[state.cloud.species.index(_sp)] += _Y_jet * _f_new
+            if _budget is not None:
+                _budget.add(MIXING, "jet composition injection", state.cloud.Y - _Y_pre)
 
             # --- Radioactive decay (operator split) ---
             # Applied to the thermalized cloud reservoir only (not the
@@ -956,6 +1056,8 @@ def run(args: argparse.Namespace) -> None:
                 _Y_pre_decay = state.cloud.Y
                 state.cloud.Y = apply_decay(_Y_pre_decay, state.cloud.species, dt)
                 delta_y = delta_y + (state.cloud.Y - _Y_pre_decay)
+                if _budget is not None:
+                    _budget.add(DECAY, "decay (operator split)", state.cloud.Y - _Y_pre_decay)
 
             # --- Adaptive timestep (Famiano eq. 4) ---
             # Species whose destruction lifetime is shorter than the step the
@@ -1020,9 +1122,14 @@ def run(args: argparse.Namespace) -> None:
             # fine_write_steps_after_transition above.
             if step % write_every == 0 or step <= _fine_write_until_step:
                 _write_history_row(fh, writer, state, state.solver.t_s, step, delta_m_over_m0)
+                if _budget is not None:
+                    _budget.write(step, state.solver.t_s)
 
         # Write final row
         _write_history_row(fh, writer, state, state.solver.t_s, step, delta_m_over_m0)
+        if _budget is not None:
+            _budget.write(step, state.solver.t_s)
+            _budget.close()
 
     wall_time = time.time() - t_start_wall
     log.info(
@@ -1043,6 +1150,8 @@ def run(args: argparse.Namespace) -> None:
         json.dump(final, f, indent=2)
     log.info("Final state written to %s", out_json)
     log.info("Abundance history written to %s", out_csv)
+    if out_budget is not None:
+        log.info("Per-process abundance budget written to %s", out_budget)
 
 
 # ---------------------------------------------------------------------------

@@ -2,33 +2,42 @@
 plot_reaction_rates.py
 
 For one or more species, plot how fast each reaction makes or destroys it
-over the course of a run: dY/dt broken down by reaction, versus time.
+over the course of a run: dY/dt broken down by process, versus time.
 
 Each figure has two panels sharing the time axis:
     top    : the species' abundance Y/H
-    bottom : |dY/dt| (Y/H per second) for each contributing process, on a
+    bottom : |dY/dt| / Y_H (per second) for each contributing process, on a
              log scale -- solid lines make the species, dashed lines destroy
              it -- plus the net rate actually seen in the run (black)
 
-Contributions are rebuilt from the saved abundances
-(outputs/abundance_history.csv by default) with the same rate library and
-decay table the simulation uses:
-    - thermonuclear reactions: n * <sigma v>(T9) * Y_i * Y_j / (1 + delta_ij)
-      times the species' net stoichiometry, with the cloud density at each
-      row taken as n0 * (1 + DM/M0) (constant-volume growth, as in
-      run_famiano.py)
-    - radioactive decay: lambda * Y
-    - "jet-cloud + mixing (inferred)": the net change seen between saved
-      rows minus the two terms above. It lumps the jet-cloud reactions with
-      the dilution and jet-composition mixing from the cloud's mass growth,
-      which cannot be separated after the fact. Saved rows are 100 steps
-      apart, so this line is coarse, especially near jet on/off switches.
+Two sources for the per-process rates:
+
+  1. Recorded budget (default, when outputs/process_budget.csv exists).
+     run_famiano.py logs the exact Delta Y each process made between
+     history rows (see core/process_budget.py): every jet-cloud reaction
+     (target destroyed + products deposited), jet thermalization, every
+     thermonuclear reaction, every decay, the two dilution terms, the jet
+     composition mixed in, and a "solver residual" for whatever the
+     implicit solve did beyond dt * (rates at the post-solve abundances).
+     These sum exactly to the change in Y, so each line is the process's
+     average rate over the interval and nothing is inferred.
+
+  2. Reconstruction (--reconstruct, or no budget file): rebuilt from the
+     saved abundances alone, with the same rate library and decay table
+     the simulation uses:
+       - thermonuclear: n * <sigma v>(T9) * Y_i * Y_j / (1 + delta_ij) times
+         the species' net stoichiometry, n = n0 * (1 + DM/M0)
+       - radioactive decay: lambda * Y
+       - "jet-cloud + mixing (inferred)": the net change between saved rows
+         minus the two terms above, which lumps every jet-cloud reaction
+         together with dilution and jet-composition mixing.
 
 Stretches where DM/M0 stays flat (jet switched off) are shaded.
 
 Usage:
     python scripts/plot_reaction_rates.py 7Li t 3He
-    python scripts/plot_reaction_rates.py 7Li --top 6 --csv path/to/history.csv
+    python scripts/plot_reaction_rates.py 7Li --top 6 --csv path/to/history.csv --budget path/to/budget.csv
+    python scripts/plot_reaction_rates.py 7Li --reconstruct
 Writes outputs/dydt_plots/dydt_<species>.png for each species (folder created if missing).
 """
 
@@ -52,9 +61,12 @@ for _p in [str(_ROOT / "core"), str(_ROOT)]:
 
 from rate_library import build_thermonuclear_library  # noqa: E402
 from decay import DECAY_TABLE  # noqa: E402
+from process_budget import read_budget, THERMONUCLEAR, DECAY, JET_CLOUD, SOLVER  # noqa: E402
 
 _ELEM = ["n", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg"]
 _LIGHT = {"n": "n", "p": "p", "d": "d", "t": "t", "4He": r"\alpha"}
+_INFERRED = "jet-cloud + mixing (inferred)"
+_RESIDUAL = "solver residual"
 
 
 def _tex(sp: str, A: dict, Z: dict, light: bool = False) -> str:
@@ -73,7 +85,6 @@ def _reaction_label(reactants: dict, products: dict, A: dict, Z: dict, label: st
     to_2a = ""
     if label and "[8Be->2a]" in label:
         # 8Be products were rewritten as 2 alpha at ingestion; show the original channel.
-        p = [x for x in p]
         for _ in range(2):
             p.remove("4He")
         p = sorted(p + ["8Be"], key=lambda s: (A.get(s, 8), s), reverse=True)
@@ -106,9 +117,12 @@ def _jet_off_spans(t: np.ndarray, dm: np.ndarray) -> list[tuple[float, float]]:
     return [(a, b) for a, b in spans if b > a and t[0] < a]
 
 
-def contributions(species: str, data: dict, lib, A: dict, Z: dict, n0: float, T9: float):
-    """Return {label: dY/dt array (per baryon, signed)} for thermonuclear + decay."""
-    t = data["t_s"]
+def reconstructed_contributions(species: str, data: dict, lib, A: dict, Z: dict, n0: float, T9: float):
+    """
+    Rebuild {label: dY/dt array (signed)} at the history rows from the saved
+    abundances: thermonuclear + decay, plus the inferred remainder. Returns
+    (contributions, observed net dY/dt).
+    """
     n = n0 * (1.0 + data["delta_m_over_m0"])
     out: dict[str, np.ndarray] = {}
     for r in lib.reactions:
@@ -131,20 +145,43 @@ def contributions(species: str, data: dict, lib, A: dict, Z: dict, n0: float, T9
         rate = net * (math.log(2.0) / ch.half_life_s) * data[parent]
         if np.any(rate != 0):
             out[_decay_label(parent, ch, A, Z)] = rate
-    return out
+
+    observed = np.gradient(data[species], data["t_s"])
+    modelled = sum(out.values()) if out else np.zeros_like(observed)
+    out[_INFERRED] = observed - modelled
+    return out, observed
 
 
-def plot_species(species: str, data: dict, lib, A: dict, Z: dict, n0: float, T9: float,
-                 top: int, out_path: Path, csv_name: str) -> None:
-    t = data["t_s"]
-    YH = data["p"]
-    m = t > 0
-    contrib = contributions(species, data, lib, A, Z, n0, T9)
+def budget_contributions(species: str, budget_species: list[str], rows: list[dict], pretty: dict):
+    """
+    Average dY/dt of each recorded process over each budget interval.
+    Returns (interval midpoint times, contributions, net dY/dt).
+    """
+    intervals = sorted({(r["t_start_s"], r["t_s"]) for r in rows}, key=lambda iv: iv[1])
+    k_of = {iv: k for k, iv in enumerate(intervals)}
+    t_mid = np.array([0.5 * (a + b) for a, b in intervals])
+    width = np.array([b - a for a, b in intervals])
+    i_sp = budget_species.index(species)
 
-    Y = data[species]
-    observed = np.gradient(Y, t)
-    modelled = sum(contrib.values()) if contrib else np.zeros_like(Y)
-    contrib["jet-cloud + mixing (inferred)"] = observed - modelled
+    out: dict[str, np.ndarray] = {}
+    for r in rows:
+        dy = r["dY"][i_sp]
+        if dy == 0.0:
+            continue
+        lab = pretty(r["category"], r["process"])
+        vec = out.setdefault(lab, np.zeros(len(intervals)))
+        k = k_of[(r["t_start_s"], r["t_s"])]
+        vec[k] += dy / width[k]
+    net = sum(out.values()) if out else np.zeros(len(intervals))
+    return t_mid, out, net
+
+
+def plot_species(species: str, t_ab: np.ndarray, Y_rel: np.ndarray, dm: np.ndarray,
+                 t_r: np.ndarray, contrib: dict, observed: np.ndarray, YH_r: np.ndarray,
+                 A: dict, Z: dict, top: int, always_show: str | None,
+                 footnote: str, out_path: Path) -> None:
+    m_ab = t_ab > 0
+    m = t_r > 0
 
     # Rank by the largest share of total |rate| each process reaches at any time.
     total_abs = np.sum([np.abs(v) for v in contrib.values()], axis=0)
@@ -152,38 +189,40 @@ def plot_species(species: str, data: dict, lib, A: dict, Z: dict, n0: float, T9:
     peak_share = {k: float(np.max(np.abs(v)[m] / total_abs[m])) for k, v in contrib.items()}
     ranked = sorted(contrib, key=lambda k: -peak_share[k])
     shown = [k for k in ranked if peak_share[k] > 0.01][:top]
-    if "jet-cloud + mixing (inferred)" not in shown:
-        shown.append("jet-cloud + mixing (inferred)")
+    if always_show in contrib and always_show not in shown:
+        shown.append(always_show)
     rest = [k for k in contrib if k not in shown]
 
     fig, (ax0, ax1) = plt.subplots(2, 1, sharex=True, figsize=(10, 8.5),
                                    gridspec_kw={"height_ratios": [1, 2.2]})
-    for a, b in _jet_off_spans(t, data["delta_m_over_m0"]):
+    for a, b in _jet_off_spans(t_ab, dm):
         for ax in (ax0, ax1):
             ax.axvspan(a, b, color="0.85", zorder=0, lw=0)
-    ax0.plot(t[m], (Y / YH)[m], color="black", lw=1.8)
+    ax0.plot(t_ab[m_ab], Y_rel[m_ab], color="black", lw=1.8)
     ax0.set_yscale("log")
     ax0.set_ylabel(r"$Y/Y_\mathrm{H}$")
     sp_tex = "$" + _tex(species, A, Z) + "$" if species not in ("d", "t", "n", "p") else species
-    ax0.set_title(f"{sp_tex}: abundance and the reactions that change it")
+    ax0.set_title(f"{sp_tex}: abundance + reactions that change it")
     ax0.grid(alpha=0.25, which="both", lw=0.5)
 
     colors = plt.cm.tab10.colors + plt.cm.Dark2.colors
     floor = 1e-40
     for i, k in enumerate(shown):
-        v = contrib[k] / YH
-        c = "0.35" if k.startswith("jet-cloud") else colors[i % len(colors)]
+        v = contrib[k] / YH_r
+        c = "0.35" if k in (_INFERRED, _RESIDUAL) else colors[i % len(colors)]
         pos = np.where(v > 0, v, np.nan)
         neg = np.where(v < 0, -v, np.nan)
-        ax1.plot(t[m], np.maximum(pos[m], floor), "-", color=c, lw=1.6, label=k)
-        ax1.plot(t[m], np.maximum(neg[m], floor), "--", color=c, lw=1.6)
+        ax1.plot(t_r[m], np.maximum(pos[m], floor), "-", color=c, lw=1.6, label=k)
+        ax1.plot(t_r[m], np.maximum(neg[m], floor), "--", color=c, lw=1.6)
     if rest:
-        v = sum(contrib[k] for k in rest) / YH
-        ax1.plot(t[m], np.where(v > 0, v, np.nan)[m], "-", color="0.7", lw=1, label=f"{len(rest)} smaller processes")
-        ax1.plot(t[m], np.where(v < 0, -v, np.nan)[m], "--", color="0.7", lw=1)
-    ax1.plot(t[m], np.abs(observed / YH)[m], ":", color="black", lw=1.6, label="|net| (seen in run)")
+        v = sum(contrib[k] for k in rest) / YH_r
+        ax1.plot(t_r[m], np.where(v > 0, v, np.nan)[m], "-", color="0.7", lw=1,
+                 label=f"{len(rest)} smaller processes")
+        ax1.plot(t_r[m], np.where(v < 0, -v, np.nan)[m], "--", color="0.7", lw=1)
+    ax1.plot(t_r[m], np.abs(observed / YH_r)[m], ":", color="black", lw=1.6,
+             label="|net| (seen in run)")
 
-    vals = np.concatenate([np.abs(contrib[k] / YH)[m] for k in shown] + [np.abs(observed / YH)[m]])
+    vals = np.concatenate([np.abs(contrib[k] / YH_r)[m] for k in shown] + [np.abs(observed / YH_r)[m]])
     vals = vals[np.isfinite(vals) & (vals > 0)]
     if vals.size:
         hi = np.nanmax(vals)
@@ -194,10 +233,8 @@ def plot_species(species: str, data: dict, lib, A: dict, Z: dict, n0: float, T9:
     ax1.set_ylabel(r"$|dY/dt|$  ($Y/Y_\mathrm{H}$ per s)")
     ax1.grid(alpha=0.25, which="both", lw=0.5)
     ax1.legend(fontsize=8.5, loc="lower left", ncol=2, framealpha=0.9,
-               title="solid = makes it, dashed = destroys it", title_fontsize=8.5)
-    fig.text(0.01, 0.005, f"From {csv_name}; T9 = {T9:g}, n = {n0:.2g}(1+ΔM/M₀) cm⁻³. "
-             "Grey bands: jet off. 'Inferred' = net change between saved rows minus thermonuclear + decay.",
-             fontsize=7.5, color="0.35")
+               title="solid = creates, dashed = destroys", title_fontsize=8.5)
+    fig.text(0.01, 0.005, footnote, fontsize=7.5, color="0.35")
     fig.tight_layout(rect=(0, 0.02, 1, 1))
     fig.savefig(out_path, dpi=130)
     plt.close(fig)
@@ -207,29 +244,81 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Plot dY/dt by reaction over time for chosen species.")
     ap.add_argument("species", nargs="+", help="species names as in config/species.json, e.g. 7Li t 3He")
     ap.add_argument("--csv", default=str(_ROOT / "outputs" / "abundance_history.csv"))
+    ap.add_argument("--budget", default=str(_ROOT / "outputs" / "process_budget.csv"),
+                    help="per-process budget written by run_famiano.py")
+    ap.add_argument("--reconstruct", action="store_true",
+                    help="rebuild rates from the abundance history even if a budget file exists")
     ap.add_argument("--top", type=int, default=8, help="number of processes drawn individually")
     ap.add_argument("--outdir", default=str(_ROOT / "outputs" / "dydt_plots"))
     args = ap.parse_args()
 
-    species_cfg = json.load(open(_ROOT / "config" / "species.json"))
+    with open(_ROOT / "config" / "species.json", encoding="utf-8") as fh:
+        species_cfg = json.load(fh)
     A = {k: int(v["A"]) for k, v in species_cfg.items() if not k.startswith("_")}
     Z = {k: int(v["Z"]) for k, v in species_cfg.items() if not k.startswith("_")}
-    cloud = json.load(open(_ROOT / "config" / "cloud.json", encoding="utf-8"))
+    with open(_ROOT / "config" / "cloud.json", encoding="utf-8") as fh:
+        cloud = json.load(fh)
     n0, T9 = float(cloud["density_cm3"]), float(cloud["temperature_K"]) / 1e9
 
     import pandas as pd
     df = pd.read_csv(args.csv)
     df = df.drop_duplicates(subset="t_s", keep="last").sort_values("t_s")
     data = {c: df[c].to_numpy(dtype=float) for c in df.columns if c != "step"}
+    t_ab = data["t_s"]
 
     lib, _ = build_thermonuclear_library()
+    csv_name = Path(args.csv).name
+
+    use_budget = not args.reconstruct and Path(args.budget).exists()
+    if use_budget:
+        budget_species, rows = read_budget(Path(args.budget))
+        thermo_pretty = {r.name(): _reaction_label(r.reactants_stoich, r.products_stoich, A, Z, r.label)
+                         for r in lib.reactions}
+
+        def pretty(category: str, process: str) -> str:
+            if category == THERMONUCLEAR:
+                return thermo_pretty.get(process, process)
+            if category == DECAY:
+                parent = process.removesuffix(" decay")
+                if parent in DECAY_TABLE and parent in A:
+                    return _decay_label(parent, DECAY_TABLE[parent], A, Z)
+            if category == JET_CLOUD:
+                return f"jet: {process}"
+            return process
+        print(f"Using recorded budget {args.budget}")
+    else:
+        print(f"Reconstructing rates from {args.csv}"
+              + ("" if args.reconstruct else f" (no budget file at {args.budget})"))
+
     Path(args.outdir).mkdir(parents=True, exist_ok=True)
     for sp in args.species:
         if sp not in data:
             print(f"skip {sp}: not a column in {args.csv}")
             continue
+        Y_rel = data[sp] / data["p"]
+        if use_budget:
+            if sp not in budget_species:
+                print(f"skip {sp}: not a column in {args.budget}")
+                continue
+            t_r, contrib, observed = budget_contributions(sp, budget_species, rows, pretty)
+            YH_r = np.interp(t_r, t_ab, data["p"])
+            res = np.abs(contrib.get(_RESIDUAL, np.zeros_like(t_r)))
+            tot = np.sum([np.abs(v) for v in contrib.values()], axis=0) if contrib else res
+            res_share = float(np.max(res / np.where(tot > 0, tot, np.inf))) if res.size else 0.0
+            footnote = (f"From {Path(args.budget).name}: Delta Y each process made between saved rows, "
+                        f"shown as average rate at each interval's midpoint. Grey bands: jet off. "
+                        f"Solver residual peaks at {100 * res_share:.2g}% of total |rate|.")
+            always_show = None
+        else:
+            contrib, observed = reconstructed_contributions(sp, data, lib, A, Z, n0, T9)
+            t_r, YH_r = t_ab, data["p"]
+            footnote = (f"From {csv_name}; T9 = {T9:g}, n = {n0:.2g}(1+ΔM/M₀) cm⁻³. "
+                        "Grey bands: jet off. 'Inferred' = net change between saved rows "
+                        "minus thermonuclear + decay.")
+            always_show = _INFERRED
         out = Path(args.outdir) / f"dydt_{sp}.png"
-        plot_species(sp, data, lib, A, Z, n0, T9, args.top, out, Path(args.csv).name)
+        plot_species(sp, t_ab, Y_rel, data["delta_m_over_m0"], t_r, contrib, observed, YH_r,
+                     A, Z, args.top, always_show, footnote, out)
         print(f"Wrote {out}")
 
 

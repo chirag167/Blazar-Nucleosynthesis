@@ -100,6 +100,32 @@ def decay_dydt(Y: np.ndarray, species: List[str]) -> np.ndarray:
     return dYdt
 
 
+def decay_dydt_by_parent(Y: np.ndarray, species: List[str]) -> Dict[str, np.ndarray]:
+    """
+    decay_dydt() split by decaying parent: {parent: dY/dt aligned with
+    `species`}, for the per-process abundance budget. Parents with Y = 0
+    are left out.
+    """
+    Y = np.asarray(Y, dtype=float)
+    index = {sp: i for i, sp in enumerate(species)}
+    out: Dict[str, np.ndarray] = {}
+
+    for parent, channel in DECAY_TABLE.items():
+        p_idx = index.get(parent)
+        if p_idx is None or Y[p_idx] == 0.0:
+            continue
+        rate = (np.log(2.0) / channel.half_life_s) * Y[p_idx]
+        vec = np.zeros_like(Y)
+        vec[p_idx] -= rate
+        for daughter, mult in channel.daughters.items():
+            d_idx = index.get(daughter)
+            if d_idx is not None:
+                vec[d_idx] += mult * rate
+        out[parent] = vec
+
+    return out
+
+
 def apply_decay(Y: np.ndarray, species: List[str], dt_s: float) -> np.ndarray:
     """
     Advance abundances Y by one exact radioactive-decay step of length dt_s.

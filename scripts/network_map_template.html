@@ -1,0 +1,350 @@
+<title>Cloud Reaction Network Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Public+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap">
+<style>
+:root {
+  --bg: #F2F5F6; --panel: #FFFFFF; --ink: #15222B; --muted: #5C6B74; --rule: #D5DEE2;
+  --cell-empty: #E7ECEE; --ramp-lo: 196 30% 88%; --ramp-hi: 188 72% 22%;
+  --made: #2E7D4F; --destroyed: #B0452F; --decay: #A86F0E; --jet: #6F52A0;
+  --bplus: #C2557A; --bminus: #3E73B8; --focus: #0E7C8C;
+  --font-display: "Spectral", Georgia, "Times New Roman", serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0F171C; --panel: #16222A; --ink: #E3ECEF; --muted: #93A4AD; --rule: #2A3A43;
+    --cell-empty: #1C2A32; --ramp-lo: 192 25% 22%; --ramp-hi: 185 60% 62%;
+    --made: #5CC28A; --destroyed: #E5836B; --decay: #D9A94A; --jet: #B49CE0;
+    --bplus: #E58AAA; --bminus: #7EA8E8; --focus: #5FC7CF;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0F171C; --panel: #16222A; --ink: #E3ECEF; --muted: #93A4AD; --rule: #2A3A43;
+  --cell-empty: #1C2A32; --ramp-lo: 192 25% 22%; --ramp-hi: 185 60% 62%;
+  --made: #5CC28A; --destroyed: #E5836B; --decay: #D9A94A; --jet: #B49CE0;
+  --bplus: #E58AAA; --bminus: #7EA8E8; --focus: #5FC7CF;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 20px 40px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { margin: 0; color: var(--muted); max-width: 70ch; }
+.snapshot { font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.snapshot b { color: var(--ink); font-weight: 600; }
+main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+.chart-card, .panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; }
+.chart-card { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.chart-scroll { overflow-x: auto; }
+svg.chart { display: block; width: 100%; min-width: 520px; height: auto; }
+.cell rect.box { stroke: var(--rule); stroke-width: 1; cursor: pointer; }
+.cell:focus { outline: none; }
+.cell:focus-visible rect.box, .cell.sel rect.box { stroke: var(--ink); stroke-width: 2.6; }
+.cell text { pointer-events: none; font-family: var(--font-body); }
+.cell .mass { font-size: 8.5px; }
+.cell .sym { font-size: 13px; font-weight: 600; }
+.axis { fill: var(--muted); font-family: var(--font-mono); font-size: 10.5px; }
+.axis-title { fill: var(--muted); font-family: var(--font-body); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.flow { fill: none; stroke-linecap: round; opacity: .85; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13.5px; }
+.controls label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.controls input { accent-color: var(--focus); }
+.swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 12.5px; color: var(--muted); align-items: center; }
+.legend .ramp { width: 120px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, hsl(var(--ramp-lo)), hsl(var(--ramp-hi))); display: inline-block; vertical-align: middle; margin-inline: 6px; }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.panel { padding: 18px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.nuc { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; }
+.nuc .big { font-family: var(--font-display); font-size: 2.6rem; font-weight: 600; line-height: 1; }
+.nuc .big sup { font-size: .5em; }
+.nuc .meta { color: var(--muted); font-size: 13.5px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 420px) { .stats { grid-template-columns: 1fr; } }
+.stat { border-top: 2px solid var(--rule); padding-top: 6px; display: flex; flex-direction: column; gap: 2px; }
+.stat .k { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.stat .v { font-family: var(--font-mono); font-size: 15px; font-variant-numeric: tabular-nums; }
+h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 6px; display: flex; gap: 8px; align-items: center; }
+h2.made { color: var(--made); } h2.destroyed { color: var(--destroyed); } h2.jet { color: var(--jet); } h2.idle { color: var(--muted); }
+.rows { display: flex; flex-direction: column; gap: 6px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 4px 10px; align-items: center; }
+.row .rx { font-size: 14px; overflow-wrap: anywhere; }
+.row .rx small { color: var(--muted); }
+.row .num { font-family: var(--font-mono); font-size: 12px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row .bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--cell-empty); overflow: hidden; }
+.row .bar i { display: block; height: 100%; }
+.tag { font-family: var(--font-mono); font-size: 10.5px; padding: 0 5px; border-radius: 3px; border: 1px solid currentColor; margin-left: 4px; white-space: nowrap; }
+.tag.thermonuclear { color: var(--muted); } .tag.decay { color: var(--decay); } .tag.jet { color: var(--jet); }
+.empty { color: var(--muted); font-size: 13.5px; margin: 0; }
+details summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+details ul { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; display: flex; flex-direction: column; gap: 3px; }
+.note { font-size: 12.5px; color: var(--muted); margin: 0; }
+footer { font-size: 12.5px; color: var(--muted); max-width: 90ch; display: flex; flex-direction: column; gap: 6px; }
+footer p { margin: 0; }
+@media (prefers-reduced-motion: no-preference) { .flow { transition: opacity .2s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Cloud reaction network</h1>
+    <p class="lede">Each square is a nucleus in the network, placed by proton number (Z) and neutron number (N) and shaded by its abundance. Select one to see which reactions make it and which destroy it, ranked by how fast each one runs right now.</p>
+    <div class="snapshot" id="snapshot"></div>
+  </header>
+
+  <main>
+    <section class="chart-card" aria-label="Chart of the nuclides">
+      <div class="controls" role="group" aria-label="Reaction types to show">
+        <label><input type="checkbox" id="f-thermonuclear" checked> Thermonuclear</label>
+        <label><input type="checkbox" id="f-decay" checked> <span class="swatch" style="background:var(--decay)"></span> Decay</label>
+        <label><input type="checkbox" id="f-jet" checked> <span class="swatch" style="background:var(--jet)"></span> Jet-cloud</label>
+      </div>
+      <div class="chart-scroll"><svg class="chart" id="chart" role="img" aria-label="Nuclides by Z and N with reaction flows for the selected nucleus"></svg></div>
+      <div class="legend">
+        <span>Abundance Y/H <i class="ramp"></i> 10<sup>−20</sup> → 1</span>
+        <span><span class="swatch" style="background:var(--made)"></span> made from</span>
+        <span><span class="swatch" style="background:var(--destroyed)"></span> destroyed into</span>
+        <span><svg width="12" height="12" aria-hidden="true"><path d="M0 0H12V12Z" fill="var(--bplus)"/></svg> β⁺ / EC</span>
+        <span><svg width="12" height="12" aria-hidden="true"><path d="M0 0H12V12Z" fill="var(--bminus)"/></svg> β⁻</span>
+      </div>
+    </section>
+
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </main>
+
+  <footer>
+    <p><b>How the ranking works.</b> Thermonuclear and decay rates are evaluated at the snapshot above: each reaction's events per second times how many of the nucleus it makes or uses up, in units of Y/H per second. The share bar is that reaction's fraction of all production (or all destruction) of the nucleus.</p>
+    <p><b>Jet-cloud reactions</b> depend on the jet's energy spectrum, so they are listed but not ranked. Only reactions with a jet projectile (p or α) run in the current code; reactions whose projectile is a secondary product are in the library but not followed.</p>
+    <p>Rebuild this page after a new run with <code>python scripts/build_network_map.py</code>.</p>
+  </footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+const ELEM = ["n","H","He","Li","Be","B","C","N","O","F","Ne","Na","Mg"];
+const ELEM_NAME = ["neutron","hydrogen","helium","lithium","beryllium","boron","carbon","nitrogen","oxygen","fluorine","neon"];
+const SPECIAL = { n: "n", p: "p", d: "d", t: "t", "4He": "α" };
+
+const sp = Object.fromEntries(DATA.species.map(s => [s.name, s]));
+const filters = { thermonuclear: true, decay: true, jet: true };
+
+function nucHTML(name, forReaction) {
+  if (forReaction && SPECIAL[name]) return SPECIAL[name];
+  const s = sp[name];
+  if (!s) { const m = /^(\d+)([A-Za-z]+)$/.exec(name); return m ? `<sup>${m[1]}</sup>${m[2]}` : name; }
+  if (name === "n") return "n";
+  const sym = ELEM[s.Z];
+  return `<sup>${s.A}</sup>${sym}`;
+}
+function nucTitle(name) {
+  const s = sp[name];
+  if (name === "n") return "neutron";
+  const alias = { p: "proton (¹H)", d: "deuteron (²H)", t: "triton (³H)", "4He": "alpha (⁴He)" }[name];
+  return alias || `${ELEM_NAME[s.Z]}-${s.A}`;
+}
+function sci(x, digits = 1) {
+  if (x === 0 || !isFinite(x)) return "0";
+  const e = Math.floor(Math.log10(Math.abs(x)));
+  const m = x / 10 ** e;
+  if (e >= -2 && e <= 3) return x.toPrecision(digits + 1).replace(/\.?0+$/, "");
+  return `${m.toFixed(digits)}×10<sup>${e}</sup>`;
+}
+function duration(s) {
+  if (!isFinite(s)) return "∞";
+  const units = [["yr", 3.156e7], ["d", 86400], ["h", 3600], ["min", 60], ["s", 1], ["ms", 1e-3], ["µs", 1e-6]];
+  for (const [u, f] of units) if (s >= f) return `${(s / f).toPrecision(3).replace(/\.?0+$/, "")} ${u}`;
+  return `${sci(s)} s`;
+}
+function reactionHTML(r) {
+  if (r.kind === "decay") {
+    const parent = Object.keys(r.reactants)[0];
+    const kids = Object.entries(r.products).map(([k, m]) => (m > 1 ? m : "") + nucHTML(k, true)).join(" + ");
+    return `${nucHTML(parent)} → ${kids} <small>(${r.mode}, t½ ${duration(r.half_life_s)})</small>`;
+  }
+  const n = r.nota;
+  const ej = n.ejectiles.length ? countList(n.ejectiles) : "γ";
+  let s = `${nucHTML(n.target)}(${nucHTML(n.projectile, true)},${ej})${nucHTML(n.residual, n.residual === "4He")}`;
+  if (r.note) s += ` <small>→ 2α</small>`;
+  return s;
+}
+function countList(list) {
+  const c = {};
+  list.forEach(x => c[x] = (c[x] || 0) + 1);
+  return Object.entries(c).map(([k, m]) => (m > 1 ? m : "") + nucHTML(k, true)).join("");
+}
+function net(r, name) { return (r.products[name] || 0) - (r.reactants[name] || 0); }
+function involves(r, name) { return (name in r.products) || (name in r.reactants); }
+
+function ramp(y) {
+  if (!(y > 0)) return "var(--cell-empty)";
+  const f = Math.min(1, Math.max(0, (Math.log10(y) + 20) / 20));
+  const lo = getComputedStyle(document.documentElement).getPropertyValue("--ramp-lo").trim().split(/\s+/).map(parseFloat);
+  const hi = getComputedStyle(document.documentElement).getPropertyValue("--ramp-hi").trim().split(/\s+/).map(parseFloat);
+  const mix = lo.map((v, i) => v + (hi[i] - v) * f);
+  return `hsl(${mix[0]} ${mix[1]}% ${mix[2]}%)`;
+}
+function textOn(y) {
+  if (!(y > 0)) return "var(--muted)";
+  const f = (Math.log10(y) + 20) / 20;
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches && document.documentElement.dataset.theme !== "light"
+               || document.documentElement.dataset.theme === "dark";
+  return dark ? (f > 0.55 ? "#0F171C" : "var(--ink)") : (f > 0.5 ? "#FFFFFF" : "var(--ink)");
+}
+
+// ---------- chart ----------
+const C = 42, PAD_L = 50, PAD_T = 14, PAD_B = 46, PAD_R = 14;
+const maxN = Math.max(...DATA.species.map(s => s.N)), maxZ = Math.max(...DATA.species.map(s => s.Z));
+const W = PAD_L + (maxN + 1) * C + PAD_R, H = PAD_T + (maxZ + 1) * C + PAD_B;
+const svg = document.getElementById("chart");
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+const X = N => PAD_L + N * C + C / 2, Y = Zv => PAD_T + (maxZ - Zv) * C + C / 2;
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; }
+
+function drawChart() {
+  svg.innerHTML = "";
+  const defs = el("defs", {});
+  for (const [id, col] of [["made", "var(--made)"], ["destroyed", "var(--destroyed)"], ["decay", "var(--decay)"], ["jet", "var(--jet)"]]) {
+    const m = el("marker", { id: "ah-" + id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 5, markerHeight: 5, orient: "auto-start-reverse" }, defs);
+    el("path", { d: "M0 0L10 5L0 10Z", fill: col }, m);
+  }
+  for (let z = 0; z <= maxZ; z++) {
+    const t = el("text", { x: PAD_L - 10, y: Y(z) + 4, "text-anchor": "end", class: "axis" }); t.textContent = ELEM[z];
+  }
+  for (let nn = 0; nn <= maxN; nn++) {
+    const t = el("text", { x: X(nn), y: PAD_T + (maxZ + 1) * C + 16, "text-anchor": "middle", class: "axis" }); t.textContent = nn;
+  }
+  const tx = el("text", { x: PAD_L + (maxN + 1) * C / 2, y: H - 8, "text-anchor": "middle", class: "axis-title" }); tx.textContent = "Neutron number N";
+  const flowLayer = el("g", { id: "flows" });
+  const cellLayer = el("g", {});
+  for (const s of DATA.species) {
+    const g = el("g", { class: "cell", tabindex: 0, role: "button", "aria-label": `${nucTitle(s.name)}, Y/H ${s.y.toExponential(1)}`, "data-name": s.name }, cellLayer);
+    el("rect", { class: "box", x: X(s.N) - C / 2 + 2, y: Y(s.Z) - C / 2 + 2, width: C - 4, height: C - 4, rx: 4, fill: ramp(s.y) }, g);
+    if (s.decay) {
+      const x0 = X(s.N) + C / 2 - 2, y0 = Y(s.Z) - C / 2 + 2;
+      const minus = /beta-/.test(s.decay) && !/beta\+/.test(s.decay);
+      el("path", { d: `M${x0 - 11} ${y0}H${x0}V${y0 + 11}Z`, fill: minus ? "var(--bminus)" : "var(--bplus)" }, g);
+    }
+    const col = textOn(s.y);
+    const label = s.name === "n" ? ["", "n"] : [String(s.A), ELEM[s.Z]];
+    const t1 = el("text", { x: X(s.N) - 9, y: Y(s.Z) - 2, class: "mass", fill: col, "text-anchor": "end" }, g); t1.textContent = label[0];
+    const t2 = el("text", { x: X(s.N) - 9, y: Y(s.Z) + 9, class: "sym", fill: col }, g); t2.textContent = label[1];
+    g.addEventListener("click", () => select(s.name));
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(s.name); } });
+  }
+}
+
+function flows(name) {
+  const layer = document.getElementById("flows");
+  layer.innerHTML = "";
+  const { made, destroyed, jetMade, jetDestroyed } = classify(name);
+  const pick = (list, n) => list.slice(0, n);
+  const draw = (from, to, color, w, dashed) => {
+    if (!sp[from] || !sp[to] || from === to) return;
+    const x1 = X(sp[from].N), y1 = Y(sp[from].Z), x2 = X(sp[to].N), y2 = Y(sp[to].Z);
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+    const shrink = C * 0.42;
+    const ax = x1 + dx / len * shrink, ay = y1 + dy / len * shrink, bx = x2 - dx / len * shrink, by = y2 - dy / len * shrink;
+    const cx = (ax + bx) / 2 - dy / len * 14, cy = (ay + by) / 2 + dx / len * 14;
+    el("path", { d: `M${ax} ${ay}Q${cx} ${cy} ${bx} ${by}`, class: "flow", stroke: `var(--${color})`, "stroke-width": w,
+                 "marker-end": `url(#ah-${color})`, "stroke-dasharray": dashed ? "4 4" : "none" }, layer);
+  };
+  for (const x of pick(made, 6)) {
+    const src = x.r.kind === "decay" ? Object.keys(x.r.reactants)[0] : x.r.nota.target === name ? x.r.nota.projectile : x.r.nota.target;
+    draw(src, name, x.r.kind === "decay" ? "decay" : "made", 1.5 + 5 * x.share);
+  }
+  for (const x of pick(destroyed, 6)) {
+    let dst = x.r.kind === "decay" ? Object.keys(x.r.products)[0] : x.r.nota.residual;
+    if (x.r.note) dst = "4He";
+    draw(name, dst, x.r.kind === "decay" ? "decay" : "destroyed", 1.5 + 5 * x.share);
+  }
+  if (filters.jet) {
+    for (const r of jetMade.filter(r => r.active).slice(0, 6)) draw(r.nota.target, name, "jet", 1.5, true);
+    for (const r of jetDestroyed.filter(r => r.active).slice(0, 6)) draw(name, r.nota.residual, "jet", 1.5, true);
+  }
+}
+
+function classify(name) {
+  const rs = DATA.reactions.filter(r => involves(r, name) && filters[r.kind]);
+  const ranked = rs.filter(r => r.kind !== "jet");
+  const madeAll = ranked.filter(r => net(r, name) > 0), destAll = ranked.filter(r => net(r, name) < 0);
+  const withFlux = (list) => {
+    const items = list.map(r => ({ r, v: Math.abs(net(r, name)) * (r.events || 0) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v);
+    const tot = items.reduce((a, x) => a + x.v, 0);
+    items.forEach(x => x.share = tot ? x.v / tot : 0);
+    return { items, tot };
+  };
+  const m = withFlux(madeAll), d = withFlux(destAll);
+  const idle = ranked.filter(r => net(r, name) !== 0 && !(r.events > 0));
+  const jets = rs.filter(r => r.kind === "jet" && !r.elastic);
+  return {
+    made: m.items, destroyed: d.items, madeTot: m.tot, destTot: d.tot, idle,
+    jetMade: jets.filter(r => net(r, name) > 0), jetDestroyed: jets.filter(r => net(r, name) < 0),
+  };
+}
+
+function rowsHTML(list, color) {
+  if (!list.length) return `<p class="empty">Nothing at this snapshot.</p>`;
+  return `<div class="rows">${list.slice(0, 12).map(x => `
+    <div class="row">
+      <div class="rx">${reactionHTML(x.r)}<span class="tag ${x.r.kind}">${x.r.kind === "decay" ? "decay" : "thermal"}</span></div>
+      <div class="num">${(100 * x.share).toFixed(x.share < 0.001 ? 2 : 1)}%</div>
+      <div class="bar"><i style="width:${Math.max(0.5, 100 * x.share)}%;background:var(--${x.r.kind === "decay" ? "decay" : color})"></i></div>
+    </div>`).join("")}</div>${list.length > 12 ? `<p class="note">${list.length - 12} smaller contributors not shown.</p>` : ""}`;
+}
+
+function select(name) {
+  document.querySelectorAll(".cell").forEach(c => c.classList.toggle("sel", c.dataset.name === name));
+  try { history.replaceState(null, "", "#" + name); } catch (e) {}
+  const s = sp[name];
+  const k = classify(name);
+  const netRate = k.madeTot - k.destTot;
+  const life = k.destTot > 0 && s.y > 0 ? s.y / k.destTot : Infinity;
+  const decayTxt = s.decay ? `${s.decay}, t½ ${duration(s.half_life_s)}` : "stable";
+  const jetRow = r => `<li>${reactionHTML(r)}${r.active ? "" : ` <small>(secondary projectile, not followed)</small>`}</li>`;
+  document.getElementById("panel").innerHTML = `
+    <div class="nuc"><span class="big">${nucHTML(name)}</span>
+      <span class="meta">${nucTitle(name)} · Z = ${s.Z}, N = ${s.N} · ${decayTxt}</span></div>
+    <div class="stats">
+      <div class="stat"><span class="k">Abundance Y/H</span><span class="v">${sci(s.y)}</span></div>
+      <div class="stat"><span class="k">Net change</span><span class="v" style="color:var(--${netRate >= 0 ? "made" : "destroyed"})">${netRate >= 0 ? "+" : "−"}${sci(Math.abs(netRate))} /s</span></div>
+      <div class="stat"><span class="k">Destruction lifetime</span><span class="v">${duration(life)}</span></div>
+    </div>
+    <div><h2 class="made">Made by</h2>${rowsHTML(k.made, "made")}</div>
+    <div><h2 class="destroyed">Destroyed by</h2>${rowsHTML(k.destroyed, "destroyed")}</div>
+    ${k.idle.length ? `<details><summary>${k.idle.length} more reaction${k.idle.length > 1 ? "s" : ""} in the network, idle at this snapshot because a reactant is absent</summary><ul>${k.idle.map(r => `<li>${reactionHTML(r)} <small>(${net(r, name) > 0 ? "makes" : "uses up"})</small></li>`).join("")}</ul></details>` : ""}
+    ${filters.jet ? `<div><h2 class="jet">Jet-cloud reactions</h2>
+      ${k.jetMade.length + k.jetDestroyed.length === 0 ? `<p class="empty">None in the library.</p>` : `
+      ${k.jetMade.length ? `<p class="note">Make it:</p><ul class="note">${k.jetMade.map(jetRow).join("")}</ul>` : ""}
+      ${k.jetDestroyed.length ? `<p class="note">Use it up:</p><ul class="note">${k.jetDestroyed.map(jetRow).join("")}</ul>` : ""}`}
+    </div>` : ""}
+  `;
+  flows(name);
+}
+
+function renderSnapshot() {
+  const s = DATA.snapshot;
+  document.getElementById("snapshot").innerHTML =
+    `<span>Snapshot <b>t = ${sci(s.t_s, 2)} s</b></span><span>ΔM/M₀ <b>${sci(s.dm_over_m0)}</b></span>` +
+    `<span>n <b>${sci(s.n_cm3)} cm⁻³</b></span><span>T₉ <b>${s.T9}</b></span><span>from <b>${s.csv.replace(/\\/g, "/")}</b></span>`;
+}
+
+for (const kind of ["thermonuclear", "decay", "jet"]) {
+  document.getElementById("f-" + kind).addEventListener("change", e => {
+    filters[kind] = e.target.checked;
+    select(document.querySelector(".cell.sel")?.dataset.name || "7Li");
+  });
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { const cur = document.querySelector(".cell.sel")?.dataset.name; drawChart(); select(cur || "7Li"); });
+new MutationObserver(() => { const cur = document.querySelector(".cell.sel")?.dataset.name; drawChart(); select(cur || "7Li"); })
+  .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+renderSnapshot();
+drawChart();
+const start = decodeURIComponent((location.hash || "").slice(1));
+select(sp[start] ? start : "7Li");
+</script>

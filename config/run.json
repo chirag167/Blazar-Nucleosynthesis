@@ -60,7 +60,9 @@
   "output": {
     "history_csv": "outputs/abundance_history.csv",
     "final_state_json": "outputs/final_state.json",
-    "write_every_n_steps": 100
+    "process_budget_csv": "outputs/process_budget.csv",
+    "write_every_n_steps": 100,
+    "_comment": "process_budget_csv: Delta Y each process (jet-cloud reaction, thermonuclear reaction, decay, dilution, jet mixing, solver residual) made between history rows, written at the same times; read by scripts/plot_reaction_rates.py. Set to null to turn it off."
   },
 
   "cascade": {
