@@ -1,0 +1,1445 @@
+ FRESCO - FRES 3.4: Coupled Reaction Channels
+ Assuming NAMELIST input.
+
+ 4He(4He,n)7Be  E=95 MeV  Q=-18.990  [he4_he4_n_be7]                             
+
+   0.050  30.000   0.250   0.100  30.000   0.000   0.000   0.000   0.000   0.000
+
+ Centre-of-mass Range is    602 * 0.0500 fm., Maximum at  30.00 fm., Interpolating NL forms every  0.25 fm.
+ Non - locality width is    301 * 0.1000 fm., Maximum of  30.00 fm., Centred at  0.00 fm.
+ 2-Nucleon Separation of      0 * 0.2500 fm., Maximum of   0.00 fm., Minimum at  0.00 fm.
+ Maximum single particle bins of 30.0000 fm.
+               M,Mint =          601         601
+
+
+ Range of total J is     0.0 <= J <=    80.0 (at least     0.0) and Absorbtion =>    -1.0000 mb.
+ Dry Run = F, CC set limits =  0  0, Relativistic kinematics = a, Both/Far/Near Analyses =  1                     
+
+ Cross Sections (and up to T0 for 0=projectile) for Theta from   0.0 to 180.0 in steps of  1.0 degrees, DGAM=0,  Coordinates = 0 (Mads)
+
+ Lower Radial Cutoff = maximum of  3.00*L*h &       0.0 fm.,  Lower Cutoff for Couplings =   0.0  fm.
+
+
+ Iterate Couplings between   1 and   1 times, to  0.000 % if sooner.                                          
+  Block solved exactly =   0 chs., with Pade = 0 & Isocen =  =0, NOSOL = F, initwf =  0
+  NL quadrature with   18 Gaussian points, Calculate multipoles up to    86 from   0
+  M-transfers for lp+lt greater than or equal to  6, Angular Integration Cutoff below  2.7778 %
+
+
+ Trace switches are :  CHANS =  1, LISTCC =  0, TRENEG =  0, CDETR =  0, SMATS =  2, XSTABL =  1, NLPL =  0
+
+                       WAVES =  0, LAMPL =  0, VEFF =  0, KFUS =  0, WDISK =  0, BPM =  0, MELFIL =  0
+
+                       CDCC =  0, NFUS =  0
+
+ Using unit mass = 1.000000 amu and 1/fine-structure constant = 137.03599 ( 1.000000 * true ) with hc = 197.32705 MeV.fm,
+  thus 2*amu/hbar^2 = 0.0478450 = 1/20.9008 and Coulomb constant = 0.1574855 so e^2 = 1.43997, and nuclear magneton= 0.1261183
+
+ Now pre-scan input and save to file 3
+
+
+
+ *********** PARTITION NUMBER  1 ******************************************************************************************
+
+   PROJ=4He        MASS=  4.0000 Z=   2.0,        # STATES=    1T, TARG=4He      MASS=  4.0000 Z=   2.0,     Q-VALUE =   0.0000 MEV.
+
+     1:  J= 0.0+ (B# 1), E=  0.0000, K= 0.0              Potl#  1       J= 0.0+ (B# 1), E=  0.0000, K= 0.0    
+
+
+ *********** PARTITION NUMBER  2 ******************************************************************************************
+
+   PROJ=n          MASS=  1.0000 Z=   0.0,        # STATES=    1T, TARG=7Be      MASS=  7.0000 Z=   4.0,     Q-VALUE = -18.9900 MEV.
+
+     1:  J= 0.5+ (B# 1), E=  0.0000, K= 0.5              Potl#  2       J= 1.5- (B#-1), E=  0.0000, K= 0.5    
+0****** WARNING : COMPARED WITH PARTITION  1, THIS PARTITION HAS TOTAL MASS & CHARGE EXCESSES  -0.02039 &   0.0000
+
+
+ ************************************************************************************************************************************
+
+ The following POTENTIALS are defined :
+
+  KP#       TYPE      IT    SHAPE      at     V1        r1        a1        V2        r2        a2        A-in     A-used
+
+
+                                            A#1       A#2        r0c       ac                                                h @ 1
+    1    0=Coulomb       0=CHARGE (WS)  1     4.000     4.000    1.4000    0.0000    0.0000    0.0000     0.000    32.000   0.05000
+
+    1    1=Volume        0=Woods-Saxon  2  120.0000    1.4000    0.5500   15.0000    1.4000    0.5500     0.000    32.000
+   --------------------------------------------------------------------------------------------------------------------
+
+                                            A#1       A#2        r0c       ac                                                h @ 2
+    2    0=Coulomb       0=CHARGE (WS)  3     1.000     7.000    0.0000    0.0000    0.0000    0.0000     0.000    24.717   0.05000
+
+    2    1=Volume        0=Woods-Saxon  4   48.0000    1.2000    0.6500    0.0000    1.2000    0.6500     0.000    24.717
+
+    2    2=Surface       0=Woods-Saxon  5    0.0000    0.0000    0.0000    6.0000    1.3000    0.5000     0.000    24.717
+
+    2    3=Projtl S.O.   0=Woods-Saxon  6    5.5000    1.0000    0.5000    0.0000    0.0000    0.0000     0.000    24.717
+   --------------------------------------------------------------------------------------------------------------------
+
+    3    1=Volume        0=Woods-Saxon  7   50.0000    1.2500    0.6500    0.0000    0.0000    0.0000     0.000    24.717
+
+    3    3=Projtl S.O.   0=Woods-Saxon  8    6.0000    1.2500    0.6500    0.0000    0.0000    0.0000     0.000    24.717
+   --------------------------------------------------------------------------------------------------------------------
+
+    4    1=Volume        0=Woods-Saxon  9   50.0000    1.2500    0.6500    0.0000    0.0000    0.0000     0.000    24.717
+
+    4    3=Projtl S.O.   0=Woods-Saxon 10    6.0000    1.2500    0.6500    0.0000    0.0000    0.0000     0.000    24.717
+
+
+ ************************************************************************************************************************************
+
+ The following SINGLE-PARTICLE FORM FACTORS are constructed :
+
+
+ No.   P1 P2 IN KIND T N  L  S1 IA J/S  IB BIND XFER  BE    SC PC FIL AFRAC Adjust  to  Z  Mass   K     Norm    rms      D0     D   ANC/Gsp
+
+    1:  2  1  1  0     1  0 0.5  1 0.5   0   3   0  20.5780  1  0  0 0.0000 VR  0.7477; 2. 3.000 0.8593 1.0000  2.579 -439.6-1093.5 11.0687
+
+    2:  1  2  2  0     2  1 0.5  1 1.5   0   4   0   1.5870  1  0  0 0.0000 VR  0.7022; 2. 3.000 0.3608 1.0000  4.679   92.7  150.1-16.0626
+
+ ************************************************************************************************************************************
+
+ TWO-way COUPLING # 1 for partitions  2 <-  1 of KIND  7,   0 -1  5 -1 -1 & P1,P2 =    0.0000   0.0000 : for J <=    80.5 & R <  29.8 fm.
+
+
+ data =  1  1  1  1  1.0000,  so  < [4He      #  1] / [n        #  1]  * Eigen-form #  1>  =   1.0000            BE = 20.578     1
+
+ data =  2  1  1  2  1.0000,  so  < [7Be      #  1] / [4He      #  1]  * Eigen-form #  2>  =   1.0000            BE =  1.587     2
+ KNT =   2, KNP =   1: NK,NG,loc=   1   1   1  11  T  T  F
+
+     So FINITE-RANGE TRANSFER : IP1 = 0 (POST    ), IP2=-1 =COMPLEX     ,  for   1 pairs of bound states summed into   1 pairs
+      The main coupling potential is that binding the transferred particle to the n        core.
+
+          Using between n        & 4He      the potential No.   5, and subtracting optical potential No.  2
+
+   A real*8 is            8  bytes
+   NLL,NLN,NLO =         120         121         301
+0File   9 needs RL =   72240    REAL*8 numbers, and NR =    88. i.e.    50.86 Megabytes
+   File            9  RECL =      577920
+0RECOMMENDED NON-LOCAL WIDTH IS GREATER THAN   12.20 FM.,  RECOMMENDED CENTRATION   1.20, after    0.45 secs.
+0Relative non-local usages (rms) are
+    0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+    0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+    0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+    0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+    0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+    0.000   0.000   0.000   0.000   0.000   0.000   0.001   0.001   0.001   0.002   0.003   0.005   0.006   0.009   0.012
+    0.014   0.022   0.028   0.039   0.052   0.063   0.096   0.120   0.167   0.223   0.266   0.398   0.493   0.674   0.885
+    1.047   1.517   1.856   2.444   3.128   3.647   4.953   5.909   7.336   8.967  10.197  12.757  14.660  17.125  19.854
+   21.876  25.543  28.263  31.490  34.978  37.503  41.815  44.994  48.622  52.516  55.287  59.928  63.315  67.084  71.071
+   73.831  78.314  81.483  84.794  88.183  90.288  93.587  95.594  97.383  98.939  99.288 100.000  99.516  98.196  96.260
+   93.695  90.783  87.201  82.652  77.504  71.954  66.183  60.433  54.899  49.518  44.395  39.665  35.425  31.793  28.839
+   26.591  25.018  24.020  23.451  23.146  22.970  22.812  22.596  22.277  21.831  21.257  20.563  19.764  18.882  17.939
+   16.955  15.951  14.944  13.950  12.979  12.042  11.144  10.292   9.486   8.729   8.021   7.361   6.747   6.177   5.650
+    5.163   4.713   4.299   3.917   3.566   3.243   2.947   2.675   2.426   2.198   1.989   1.798   1.624   1.465   1.321
+    1.189   1.070   0.961   0.863   0.774   0.694   0.621   0.556   0.497   0.444   0.396   0.353   0.315   0.280   0.250
+    0.222   0.198   0.176   0.156   0.139   0.123   0.109   0.097   0.086   0.076   0.068   0.060   0.053   0.047   0.042
+    0.037   0.033   0.029   0.026   0.023   0.020   0.018   0.016   0.014   0.012   0.011   0.010   0.009   0.008   0.007
+    0.006   0.005   0.005   0.004   0.004   0.003   0.003   0.003   0.002   0.002   0.002   0.002   0.001   0.001   0.001
+    0.001   0.001   0.001   0.001   0.001   0.001   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+    0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000   0.000
+    0.000
+
+ Incoming partition  1 in excitation state # 1,   Laboratory Energy given for partition  1 Nucleus 1 in Excitation pair 1
+
+0Lab. ENERGY ranges :
+
+   from    95.0000     to   0.00000     in     0 intervals
+   from    0.00000     to   0.00000     in     0 intervals
+   from    0.00000     to   0.00000     in     0 intervals
+
+ Largest real,imaginary parts of any form factor at R=   29.50 are   4.88E-02  2.46E-19 MeV
+ Finished all Couplings @   0.500000000              10
+
+ Symmetric Hamiltonian
+1***********************************************************************************************************************************
+************************************************************************************************************************************
+
+        INCOMING 4He      ;    LABORATORY 4He      ENERGY =   95.000     MeV.
+
+ ***********************************************************************************************************************************
+ ***********************************************************************************************************************************
+
+
+  NOTE: Coulomb excitation cut off below   0.184 deg by JTMAX, and below   0.232 deg by Rmax
+
+ Allocate arrays for            2  channels, of which            2  need wfs.
+
+ ######################################################################################################################
+ #                                                                                                                    #
+ # Total SPIN and PARITY =     0.0 +,      2 channels,    0 in 1st block.  Rmin & Coul turning =    0.0    0.1 fm.  #
+ #                                                                                                                    #
+ ######################################################################################################################
+
+
+
+    C Projectl Target   #   EX.   (L  Proj) J  + Targ = Jtotal     E-cm      Re K     Re Eta     RM*K            CH
+    1 4He      4He      #    1: I   0 0.0    0.0  0.0     0.0    47.50000   2.13197   0.12926   63.9590  -0.20701   0.45569 1 1 1   1
+    2 n        7Be      #    1:     1 0.5    1.5  1.5     0.0    28.78835   1.09782   0.00000   32.9346   0.01090   0.50011 2 1 2   1
+   S-matrix    1 =    0.12418  -0.13310 for L=    0, J=    0.0 channel on core I =   0.0 from L=    0,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =  -23.493  48.804 deg. for the L =    0, J =    0.0 channel.
+       0.0  0.12417566 -0.13309565i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec     0.0+/ 0 @ 1 =   6.683 , Out:   0.000#   0.099/   6.683f
+
+ Allocate arrays for            4  channels, of which            4  need wfs.
+
+ Total SPIN, PARITY =     1.0 -,      4 chs,      0 cc.  Rmin & Coul turning =    0.2    0.7
+   S-matrix    1 =    0.06627  -0.17053 for L=    1, J=    1.0 channel on core I =   0.0 from L=    1,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =  -34.382  48.659 deg. for the L =    1, J =    1.0 channel.
+       1.0  0.06626863 -0.17052951i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec     1.0-/ 1 @ 1 =  20.041 , Out:   0.000#   1.292/  20.040f
+
+ Allocate arrays for            5  channels, of which            5  need wfs.
+
+ Total SPIN, PARITY =     2.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    0.3    1.2
+   S-matrix    1 =    0.00864  -0.18516 for L=    2, J=    2.0 channel on core I =   0.0 from L=    2,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =  -43.665  48.284 deg. for the L =    2, J =    2.0 channel.
+       2.0  0.00863835 -0.18516314i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec     2.0+/ 2 @ 1 =  33.371 , Out:   0.000#   0.674/  33.371f
+
+
+ Total SPIN, PARITY =     3.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    0.5    1.7
+   S-matrix    1 =   -0.05588  -0.17875 for L=    3, J=    3.0 channel on core I =   0.0 from L=    3,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =  -53.680  47.990 deg. for the L =    3, J =    3.0 channel.
+       3.0 -0.05587742 -0.17874879i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec     3.0-/ 3 @ 1 =  46.685 , Out:   0.000#   2.659/  46.683f
+
+
+ Total SPIN, PARITY =     4.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    0.6    2.2
+   S-matrix    1 =   -0.13134  -0.13634 for L=    4, J=    4.0 channel on core I =   0.0 from L=    4,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =  -66.965  47.681 deg. for the L =    4, J =    4.0 channel.
+       4.0 -0.13133796 -0.13633911i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec     4.0+/ 4 @ 1 =  59.977 , Out:   0.000#   0.675/  59.976f
+
+
+ Total SPIN, PARITY =     5.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    0.8    2.6
+   S-matrix    1 =   -0.18799  -0.05197 for L=    5, J=    5.0 channel on core I =   0.0 from L=    5,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =  -82.274  46.827 deg. for the L =    5, J =    5.0 channel.
+       5.0 -0.18798886 -0.05196637i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec     5.0-/ 5 @ 1 =  73.137 , Out:   0.000#   2.817/  73.134f
+
+
+ Total SPIN, PARITY =     6.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    0.9    3.1
+   S-matrix    1 =   -0.17799   0.07788 for L=    6, J=    6.0 channel on core I =   0.0 from L=    6,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   78.184  46.937 deg. for the L =    6, J =    6.0 channel.
+       6.0 -0.17799428  0.07788322i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec     6.0+/ 6 @ 1 =  86.461 , Out:   0.000#   1.786/  86.459f
+
+
+ Total SPIN, PARITY =     7.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    1.1    3.6
+   S-matrix    1 =   -0.07183   0.19514 for L=    7, J=    7.0 channel on core I =   0.0 from L=    7,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   55.104  44.991 deg. for the L =    7, J =    7.0 channel.
+       7.0 -0.07182853  0.19514319i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec     7.0-/ 7 @ 1 =  99.194 , Out:   0.000#   0.895/  99.193f
+
+
+ Total SPIN, PARITY =     8.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    1.2    4.0
+   S-matrix    1 =    0.10721   0.17034 for L=    8, J=    8.0 channel on core I =   0.0 from L=    8,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   28.908  45.925 deg. for the L =    8, J =    8.0 channel.
+       8.0  0.10720926  0.17034474i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec     8.0+/ 8 @ 1 = 112.740 , Out:   0.000#   0.159/ 112.740f
+
+
+ Total SPIN, PARITY =     9.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    1.4    4.5
+   S-matrix    1 =    0.20716  -0.06105 for L=    9, J=    9.0 channel on core I =   0.0 from L=    9,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -8.210  43.906 deg. for the L =    9, J =    9.0 channel.
+       9.0  0.20716230 -0.06104839i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec     9.0-/ 9 @ 1 = 125.198 , Out:   0.000#   0.015/ 125.198f
+
+
+ Total SPIN, PARITY =    10.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    1.5    5.0
+   S-matrix    1 =    0.03575  -0.23959 for L=   10, J=   10.0 channel on core I =   0.0 from L=   10,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =  -40.757  40.617 deg. for the L =   10, J =   10.0 channel.
+      10.0  0.03574956 -0.23959459i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    10.0+/10 @ 1 = 136.629 , Out:   0.000#   4.117# 136.629f
+
+
+ Total SPIN, PARITY =    11.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    1.7    5.4
+   S-matrix    1 =   -0.10553   0.08048 for L=   11, J=   11.0 channel on core I =   0.0 from L=   11,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   71.336  57.855 deg. for the L =   11, J =   11.0 channel.
+      11.0 -0.10553451  0.08047544i: elastic S-matrix  @@      0.06  0   0 F  0
+ Reaction Xsec    11.0-/11 @ 1 = 156.171 , Out:   0.000#   0.348# 156.171f
+
+
+ Total SPIN, PARITY =    12.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    1.8    5.9
+   S-matrix    1 =    0.36985   0.30466 for L=   12, J=   12.0 channel on core I =   0.0 from L=   12,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   19.740  21.076 deg. for the L =   12, J =   12.0 channel.
+      12.0  0.36985358  0.30466094i: elastic S-matrix  @@      0.06  0   0 F  0
+ Reaction Xsec    12.0+/12 @ 1 = 133.119 , Out:   0.000#   0.049# 133.119f
+
+
+ Total SPIN, PARITY =    13.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    2.0    6.4
+   S-matrix    1 =    0.48137   0.34335 for L=   13, J=   13.0 channel on core I =   0.0 from L=   13,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   17.750  15.054 deg. for the L =   13, J =   13.0 channel.
+      13.0  0.48136878  0.34334981i: elastic S-matrix  @@      0.06  0   0 F  0
+ Reaction Xsec    13.0-/13 @ 1 = 121.375 , Out:   0.000#   0.020# 121.375f
+
+
+ Total SPIN, PARITY =    14.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    2.1    6.9
+   S-matrix    1 =    0.91138   0.25298 for L=   14, J=   14.0 channel on core I =   0.0 from L=   14,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    7.757   1.595 deg. for the L =   14, J =   14.0 channel.
+      14.0  0.91137744  0.25298149i: elastic S-matrix  @@      0.08  0   0 F  0
+ Reaction Xsec    14.0+/14 @ 1 =  21.125 , Out:   0.000#   0.006#  21.125f
+
+
+ Total SPIN, PARITY =    15.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    2.2    7.3
+   S-matrix    1 =    0.97899   0.10395 for L=   15, J=   15.0 channel on core I =   0.0 from L=   15,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    3.031   0.448 deg. for the L =   15, J =   15.0 channel.
+      15.0  0.97898636  0.10395146i: elastic S-matrix  @@      0.06  0   0 F  0
+ Reaction Xsec    15.0-/15 @ 1 =   6.595 , Out:   0.000#   0.009#   6.595f
+
+
+ Total SPIN, PARITY =    16.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    2.4    7.8
+   S-matrix    1 =    0.99301   0.04459 for L=   16, J=   16.0 channel on core I =   0.0 from L=   16,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    1.286   0.172 deg. for the L =   16, J =   16.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.6 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      16.0  0.99300678  0.04459430i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    16.0+/16 @ 1 =   2.725 , Out:   0.000#   0.003#   2.725f
+
+
+ Total SPIN, PARITY =    17.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    2.6    8.3
+   S-matrix    1 =    0.99728   0.01957 for L=   17, J=   17.0 channel on core I =   0.0 from L=   17,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.562   0.072 deg. for the L =   17, J =   17.0 channel.
+      17.0  0.99728051  0.01957454i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    17.0-/17 @ 1 =   1.221 , Out:   0.000#   0.005#   1.221f
+
+
+ Total SPIN, PARITY =    18.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    2.7    8.7
+   S-matrix    1 =    0.99886   0.00868 for L=   18, J=   18.0 channel on core I =   0.0 from L=   18,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.249   0.032 deg. for the L =   18, J =   18.0 channel.
+      18.0  0.99886103  0.00867800i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    18.0+/18 @ 1 =   0.563 , Out:   0.000#   0.008#   0.563f
+
+
+ Total SPIN, PARITY =    19.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    2.9    9.2
+   S-matrix    1 =    0.99951   0.00386 for L=   19, J=   19.0 channel on core I =   0.0 from L=   19,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.111   0.014 deg. for the L =   19, J =   19.0 channel.
+      19.0  0.99950618  0.00386304i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    19.0-/19 @ 1 =   0.262 , Out:   0.000#   0.331#   0.262f
+
+
+ Total SPIN, PARITY =    20.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    3.0    9.7
+   S-matrix    1 =    0.99978   0.00172 for L=   20, J=   20.0 channel on core I =   0.0 from L=   20,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.049   0.006 deg. for the L =   20, J =   20.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.6 DIGITS, SO EXPECT ERRORS OF   0.0001 % OF UNITARITY
+
+      20.0  0.99978251  0.00172214i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    20.0+/20 @ 1 =   0.122 , Out:   0.000#   0.005#   0.122f
+
+
+ Total SPIN, PARITY =    21.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    3.2   10.1
+   S-matrix    1 =    0.99990   0.00077 for L=   21, J=   21.0 channel on core I =   0.0 from L=   21,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.022   0.003 deg. for the L =   21, J =   21.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.3 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      21.0  0.99990356  0.00076790i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    21.0-/21 @ 1 =   0.057 , Out:   0.000#   1.303#   0.057f
+
+
+ Total SPIN, PARITY =    22.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    3.3   10.6
+   S-matrix    1 =    0.99996   0.00034 for L=   22, J=   22.0 channel on core I =   0.0 from L=   22,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.010   0.001 deg. for the L =   22, J =   22.0 channel.
+      22.0  0.99995713  0.00034230i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    22.0+/22 @ 1 =   0.027 , Out:   0.000#   0.392/   0.026f
+
+
+ Total SPIN, PARITY =    23.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    3.5   11.1
+   S-matrix    1 =    0.99998   0.00015 for L=   23, J=   23.0 channel on core I =   0.0 from L=   23,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.004   0.001 deg. for the L =   23, J =   23.0 channel.
+      23.0  0.99998092  0.00015251i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    23.0-/23 @ 1 =   0.012 , Out:   0.000#   7.111/   0.005f
+
+
+ Total SPIN, PARITY =    24.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    3.6   11.6
+   S-matrix    1 =    0.99999   0.00007 for L=   24, J=   24.0 channel on core I =   0.0 from L=   24,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.002   0.000 deg. for the L =   24, J =   24.0 channel.
+      24.0  0.99999151  0.00006791i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    24.0+/24 @ 1 =   5.748/, Out:   0.000#   0.128   -0.122f
+
+
+ Total SPIN, PARITY =    25.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    3.8   12.0
+   S-matrix    1 =    1.00000   0.00003 for L=   25, J=   25.0 channel on core I =   0.0 from L=   25,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.001   0.000 deg. for the L =   25, J =   25.0 channel.
+      25.0  0.99999622  0.00003023i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    25.0-/25 @ 1 =   2.661/, Out:   0.000#   0.149   -0.147f
+
+
+ Total SPIN, PARITY =    26.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    3.9   12.5
+   S-matrix    1 =    1.00000   0.00001 for L=   26, J=   26.0 channel on core I =   0.0 from L=   26,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   26, J =   26.0 channel.
+      26.0  0.99999832  0.00001346i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    26.0+/26 @ 1 =   1.229/, Out:   0.000#   3.792   -3.790f
+
+
+ Total SPIN, PARITY =    27.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    4.0   13.0
+   S-matrix    1 =    1.00000   0.00001 for L=   27, J=   27.0 channel on core I =   0.0 from L=   27,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   27, J =   27.0 channel.
+      27.0  0.99999925  0.00000599i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    27.0-/27 @ 1 =   0.567/, Out:   0.000# 111.707 -111.707f
+
+
+ Total SPIN, PARITY =    28.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    4.2   13.4
+   S-matrix    1 =    1.00000   0.00000 for L=   28, J=   28.0 channel on core I =   0.0 from L=   28,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   28, J =   28.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.2 DIGITS, SO EXPECT ERRORS OF   1.3939 % OF UNITARITY
+
+      28.0  0.99999967  0.00000268i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    28.0+/28 @ 1 =   0.261/, Out:   0.000#  12.385  -12.385f
+
+
+ Total SPIN, PARITY =    29.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    4.4   13.9
+   S-matrix    1 =    1.00000   0.00000 for L=   29, J=   29.0 channel on core I =   0.0 from L=   29,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   29, J =   29.0 channel.
+      29.0  0.99999985  0.00000120i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    29.0-/29 @ 1 =   0.120/, Out:   0.000#1113.675 ********f
+
+
+ Total SPIN, PARITY =    30.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    4.5   14.4
+   S-matrix    1 =    1.00000   0.00000 for L=   30, J=   30.0 channel on core I =   0.0 from L=   30,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   30, J =   30.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.5 DIGITS, SO EXPECT ERRORS OF   9.5081 % OF UNITARITY
+
+   282505771689746.69        142736318667399.66        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      30.0  0.99999993  0.00000054i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    30.0+/30 @ 1 =   0.055/, Out:   0.000# 428.500 -428.500f
+
+
+ Total SPIN, PARITY =    31.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    4.7   14.8
+   S-matrix    1 =    1.00000   0.00000 for L=   31, J=   31.0 channel on core I =   0.0 from L=   31,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   31, J =   31.0 channel.
+   107790127750478.56        1201007566124548.8        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      31.0  0.99999997  0.00000025i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    31.0-/31 @ 1 =   0.025/, Out:   0.000#******** ********f
+
+
+ Total SPIN, PARITY =    32.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    4.8   15.3
+   S-matrix    1 =    1.00000   0.00000 for L=   32, J=   32.0 channel on core I =   0.0 from L=   32,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   32, J =   32.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.3 DIGITS, SO EXPECT ERRORS OF  52.0683 % OF UNITARITY
+
+   183396907474128.34        781649612188436.62        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      32.0  0.99999999  0.00000013i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    32.0+/32 @ 1 =   0.012/, Out:   0.000#******** ********f
+
+
+ Total SPIN, PARITY =    33.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    5.0   15.8
+   S-matrix    1 =    1.00000   0.00000 for L=   33, J=   33.0 channel on core I =   0.0 from L=   33,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   33, J =   33.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.8 DIGITS, SO EXPECT ERRORS OF  27.1336 % OF UNITARITY
+
+   6704777335892425.0        407329226186293.19        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      33.0  0.99999999  0.00000006i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    33.0-/33 @ 1 =   5.252#, Out:   0.000#2661.058 ********f
+
+
+ Total SPIN, PARITY =    34.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    5.1   16.2
+   S-matrix    1 =    1.00000   0.00000 for L=   34, J=   34.0 channel on core I =   0.0 from L=   34,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   34, J =   34.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.7 DIGITS, SO EXPECT ERRORS OF  55.4189 % OF UNITARITY
+
+   462366121435935.62        831949082682821.88        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      34.0  1.00000000  0.00000003i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    34.0+/34 @ 1 =   2.395#, Out:   0.000#3998.576 ********f
+
+
+ Total SPIN, PARITY =    35.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    5.2   16.7
+   S-matrix    1 =    1.00000   0.00000 for L=   35, J=   35.0 channel on core I =   0.0 from L=   35,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   35, J =   35.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.4 DIGITS, SO EXPECT ERRORS OF  31.3412 % OF UNITARITY
+
+   280259120507475.34        470493410050787.25        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      35.0  1.00000000  0.00000003i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    35.0-/35 @ 1 =   1.091#, Out:   0.000#2546.905 ********f
+
+
+ Total SPIN, PARITY =    36.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    5.4   17.2
+   S-matrix    1 =    1.00000   0.00000 for L=   36, J=   36.0 channel on core I =   0.0 from L=   36,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   36, J =   36.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.4 DIGITS, SO EXPECT ERRORS OF 104.2286 % OF UNITARITY
+
+   264013386003047.59        1564679397460292.8        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      36.0  1.00000000  0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    36.0+/36 @ 1 =   0.496#, Out:   0.000#******** ********f
+
+
+ Total SPIN, PARITY =    37.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    5.6   17.6
+   S-matrix    1 =    1.00000   0.00000 for L=   37, J=   37.0 channel on core I =   0.0 from L=   37,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   37, J =   37.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.3 DIGITS, SO EXPECT ERRORS OF  26.2304 % OF UNITARITY
+
+   2031313568532876.2        393770948699691.75        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      37.0  1.00000000  0.00000001i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    37.0-/37 @ 1 =   0.225#, Out:   0.000#******** ********f
+
+
+ Total SPIN, PARITY =    38.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    5.7   18.1
+   S-matrix    1 =    1.00000   0.00000 for L=   38, J=   38.0 channel on core I =   0.0 from L=   38,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   38, J =   38.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.8 DIGITS, SO EXPECT ERRORS OF  39.6123 % OF UNITARITY
+
+   693644147047118.12        594660066626611.75        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      38.0  1.00000000  0.00000001i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    38.0+/38 @ 1 =   0.102#, Out:   0.000#1409.248 ********f
+
+
+ Total SPIN, PARITY =    39.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    5.9   18.6
+   S-matrix    1 =    1.00000   0.00000 for L=   39, J=   39.0 channel on core I =   0.0 from L=   39,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   39, J =   39.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.6 DIGITS, SO EXPECT ERRORS OF  73.1772 % OF UNITARITY
+
+   3695892314678202.5        1098535533274070.6        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      39.0  1.00000000  0.00000001i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    39.0-/39 @ 1 =   0.046#, Out:   0.000#3087.656 ********f
+
+
+ Total SPIN, PARITY =    40.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    6.0   19.1
+   S-matrix    1 =    1.00000  -0.00000 for L=   40, J=   40.0 channel on core I =   0.0 from L=   40,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   40, J =   40.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 14.9 DIGITS, SO EXPECT ERRORS OF  28.1149 % OF UNITARITY
+
+   726565983262883.25        422061488444362.56        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      40.0  1.00000000 -0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    40.0+/40 @ 1 =   0.021#, Out:   0.000#1507.671 ********f
+
+
+ Total SPIN, PARITY =    41.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    6.2   19.5
+   S-matrix    1 =    1.00000   0.00000 for L=   41, J=   41.0 channel on core I =   0.0 from L=   41,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   41, J =   41.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.0 DIGITS, SO EXPECT ERRORS OF  60.7650 % OF UNITARITY
+
+   905514586900170.00        912204494370465.75        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      41.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    41.0-/41 @ 1 =   0.010#, Out:   0.000#******** ********f
+
+
+ Total SPIN, PARITY =    42.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    6.3   20.0
+   S-matrix    1 =    1.00000   0.00000 for L=   42, J=   42.0 channel on core I =   0.0 from L=   42,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   42, J =   42.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.5 DIGITS, SO EXPECT ERRORS OF  75.9875 % OF UNITARITY
+
+   3522840802946511.0        1140723675631871.2        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      42.0  1.00000000  0.00000001i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    42.0+/42 @ 1 =   0.004#, Out:   0.000#9063.163 ********f
+
+
+ Total SPIN, PARITY =    43.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    6.5   20.5
+   S-matrix    1 =    1.00000  -0.00000 for L=   43, J=   43.0 channel on core I =   0.0 from L=   43,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   43, J =   43.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 16.4 DIGITS, SO EXPECT ERRORS OF  19.3857 % OF UNITARITY
+
+   22945263412428876.        291017500726007.44        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      43.0  1.00000000 -0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    43.0-/43 @ 1 =   0.002#, Out:   0.000# 241.882 -241.882f
+
+
+ Total SPIN, PARITY =    44.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    6.6   20.9
+   S-matrix    1 =    1.00000  -0.00000 for L=   44, J=   44.0 channel on core I =   0.0 from L=   44,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   44, J =   44.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.5 DIGITS, SO EXPECT ERRORS OF  14.9957 % OF UNITARITY
+
+   2870858896647336.0        225116124106752.69        2.2204460492503131E-016
+ Increase lower cutoff: eg CUTL. Continuing.
+      44.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    44.0+/44 @ 1 =   0.001#, Out:   0.000#  90.298  -90.298f
+
+
+ Total SPIN, PARITY =    45.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    6.8   21.4
+   S-matrix    1 =    1.00000  -0.00000 for L=   45, J=   45.0 channel on core I =   0.0 from L=   45,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   45, J =   45.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.4 DIGITS, SO EXPECT ERRORS OF   1.2734 % OF UNITARITY
+
+      45.0  1.00000000 -0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    45.0-/45 @ 1 =   0.000#, Out:   0.000#   1.469   -1.469f
+
+
+ Total SPIN, PARITY =    46.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    6.9   21.9
+   S-matrix    1 =    1.00000   0.00000 for L=   46, J=   46.0 channel on core I =   0.0 from L=   46,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   46, J =   46.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 16.3 DIGITS, SO EXPECT ERRORS OF   0.9595 % OF UNITARITY
+
+      46.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    46.0+/46 @ 1 =   0.000#, Out:   0.000#   0.223   -0.223f
+
+
+ Total SPIN, PARITY =    47.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    7.1   22.3
+   S-matrix    1 =    1.00000  -0.00000 for L=   47, J=   47.0 channel on core I =   0.0 from L=   47,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   47, J =   47.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 17.8 DIGITS, SO EXPECT ERRORS OF   0.3916 % OF UNITARITY
+
+      47.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    47.0-/47 @ 1 =   0.000#, Out:   0.000#   0.016   -0.016f
+
+
+ Total SPIN, PARITY =    48.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    7.2   22.8
+   S-matrix    1 =    1.00000  -0.00000 for L=   48, J=   48.0 channel on core I =   0.0 from L=   48,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   48, J =   48.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.1 DIGITS, SO EXPECT ERRORS OF   0.0822 % OF UNITARITY
+
+      48.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    48.0+/48 @ 1 =   0.000#, Out:   0.000#   0.018   -0.018f
+
+
+ Total SPIN, PARITY =    49.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    7.4   23.3
+   S-matrix    1 =    1.00000  -0.00000 for L=   49, J=   49.0 channel on core I =   0.0 from L=   49,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   49, J =   49.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.3 DIGITS, SO EXPECT ERRORS OF   0.0352 % OF UNITARITY
+
+      49.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    49.0-/49 @ 1 =   0.000#, Out:   0.000#   1.674/  -0.002f
+
+
+ Total SPIN, PARITY =    50.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    7.5   23.7
+   S-matrix    1 =    1.00000  -0.00000 for L=   50, J=   50.0 channel on core I =   0.0 from L=   50,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   50, J =   50.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 17.6 DIGITS, SO EXPECT ERRORS OF   0.0220 % OF UNITARITY
+
+      50.0  1.00000000 -0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    50.0+/50 @ 1 =   0.000#, Out:   0.000#   0.024/  -0.000f
+
+
+ Total SPIN, PARITY =    51.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    7.7   24.2
+   S-matrix    1 =    1.00000  -0.00000 for L=   51, J=   51.0 channel on core I =   0.0 from L=   51,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   51, J =   51.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 17.3 DIGITS, SO EXPECT ERRORS OF   0.0157 % OF UNITARITY
+
+      51.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    51.0-/51 @ 1 =   0.000#, Out:   0.000#   0.041/  -0.000f
+
+
+ Total SPIN, PARITY =    52.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    7.8   24.7
+   S-matrix    1 =    1.00000  -0.00000 for L=   52, J=   52.0 channel on core I =   0.0 from L=   52,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   52, J =   52.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.0 DIGITS, SO EXPECT ERRORS OF   0.0017 % OF UNITARITY
+
+      52.0  1.00000000 -0.00000002i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    52.0+/52 @ 1 =   0.000#, Out:   0.000#   1.466#  -0.000f
+
+
+ Total SPIN, PARITY =    53.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    8.0   25.2
+   S-matrix    1 =    1.00000  -0.00000 for L=   53, J=   53.0 channel on core I =   0.0 from L=   53,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   53, J =   53.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.5 DIGITS, SO EXPECT ERRORS OF   0.0008 % OF UNITARITY
+
+      53.0  1.00000000 -0.00000002i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    53.0-/53 @ 1 =   0.000#, Out:   0.000#   0.062#  -0.000f
+
+
+ Total SPIN, PARITY =    54.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    8.1   25.6
+   S-matrix    1 =    1.00000  -0.00000 for L=   54, J=   54.0 channel on core I =   0.0 from L=   54,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   54, J =   54.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.4 DIGITS, SO EXPECT ERRORS OF   0.0005 % OF UNITARITY
+
+      54.0  1.00000000 -0.00000002i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    54.0+/54 @ 1 =   0.000#, Out:   0.000#   0.034#  -0.000f
+
+
+ Total SPIN, PARITY =    55.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    8.2   26.1
+   S-matrix    1 =    1.00000  -0.00000 for L=   55, J=   55.0 channel on core I =   0.0 from L=   55,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   55, J =   55.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.3 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      55.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    55.0-/55 @ 1 =   0.000#, Out:   0.000#   0.001#  -0.000f
+
+
+ Total SPIN, PARITY =    56.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    8.4   26.6
+   S-matrix    1 =    1.00000  -0.00000 for L=   56, J=   56.0 channel on core I =   0.0 from L=   56,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   56, J =   56.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 16.8 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      56.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    56.0+/56 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    57.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    8.6   27.0
+   S-matrix    1 =    1.00000  -0.00000 for L=   57, J=   57.0 channel on core I =   0.0 from L=   57,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   57, J =   57.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.0 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      57.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    57.0-/57 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    58.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    8.7   27.5
+   S-matrix    1 =    1.00000  -0.00000 for L=   58, J=   58.0 channel on core I =   0.0 from L=   58,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   58, J =   58.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.3 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      58.0  1.00000000 -0.00000002i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    58.0+/58 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    59.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    8.8   28.0
+   S-matrix    1 =    1.00000  -0.00000 for L=   59, J=   59.0 channel on core I =   0.0 from L=   59,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   59, J =   59.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.0 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      59.0  1.00000000 -0.00000002i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    59.0-/59 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    60.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    9.0   28.4
+   S-matrix    1 =    1.00000  -0.00000 for L=   60, J=   60.0 channel on core I =   0.0 from L=   60,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000  -0.000 deg. for the L =   60, J =   60.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.8 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      60.0  1.00000000 -0.00000002i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    60.0+/60 @ 1 =  -0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    61.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    9.2   28.9
+   S-matrix    1 =    1.00000  -0.00000 for L=   61, J=   61.0 channel on core I =   0.0 from L=   61,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000  -0.000 deg. for the L =   61, J =   61.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.0 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      61.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    61.0-/61 @ 1 =  -0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    62.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    9.3   29.4
+   S-matrix    1 =    1.00000  -0.00000 for L=   62, J=   62.0 channel on core I =   0.0 from L=   62,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   62, J =   62.0 channel.
+0****** WARNING : ACCURACY LOSS IN ERWIN = 15.0 DIGITS, SO EXPECT ERRORS OF   0.0000 % OF UNITARITY
+
+      62.0  1.00000000 -0.00000001i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    62.0+/62 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    63.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    9.5   29.8
+   S-matrix    1 =    1.00000  -0.00000 for L=   63, J=   63.0 channel on core I =   0.0 from L=   63,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   63, J =   63.0 channel.
+      63.0  1.00000000 -0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    63.0-/63 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    64.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    9.6   30.3
+   S-matrix    1 =    1.00000  -0.00000 for L=   64, J=   64.0 channel on core I =   0.0 from L=   64,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000  -0.000 deg. for the L =   64, J =   64.0 channel.
+      64.0  1.00000000 -0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    64.0+/64 @ 1 =  -0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    65.0 -,      5 chs,      0 cc.  Rmin & Coul turning =    9.8   30.8
+   S-matrix    1 =    1.00000  -0.00000 for L=   65, J=   65.0 channel on core I =   0.0 from L=   65,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =   -0.000   0.000 deg. for the L =   65, J =   65.0 channel.
+      65.0  1.00000000 -0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    65.0-/65 @ 1 =   0.000#, Out:   0.000#   0.000#   0.000f
+
+
+ Total SPIN, PARITY =    66.0 +,      5 chs,      0 cc.  Rmin & Coul turning =    9.9   31.3
+   S-matrix    1 =    1.00000   0.00000 for L=   66, J=   66.0 channel on core I =   0.0 from L=   66,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000  -0.000 deg. for the L =   66, J =   66.0 channel.
+      66.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    66.0+/66 @ 1 =  -0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    67.0 -,      5 chs,      0 cc.  Rmin & Coul turning =   10.1   31.7
+   S-matrix    1 =    1.00000   0.00000 for L=   67, J=   67.0 channel on core I =   0.0 from L=   67,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   67, J =   67.0 channel.
+      67.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    67.0-/67 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    68.0 +,      5 chs,      0 cc.  Rmin & Coul turning =   10.2   32.2
+   S-matrix    1 =    1.00000   0.00000 for L=   68, J=   68.0 channel on core I =   0.0 from L=   68,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   68, J =   68.0 channel.
+      68.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    68.0+/68 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    69.0 -,      5 chs,      0 cc.  Rmin & Coul turning =   10.4   32.7
+   S-matrix    1 =    1.00000   0.00000 for L=   69, J=   69.0 channel on core I =   0.0 from L=   69,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   69, J =   69.0 channel.
+      69.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    69.0-/69 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    70.0 +,      5 chs,      0 cc.  Rmin & Coul turning =   10.5   33.1
+   S-matrix    1 =    1.00000   0.00000 for L=   70, J=   70.0 channel on core I =   0.0 from L=   70,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   70, J =   70.0 channel.
+      70.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    70.0+/70 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    71.0 -,      5 chs,      0 cc.  Rmin & Coul turning =   10.7   33.6
+   S-matrix    1 =    1.00000   0.00000 for L=   71, J=   71.0 channel on core I =   0.0 from L=   71,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   71, J =   71.0 channel.
+      71.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    71.0-/71 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    72.0 +,      5 chs,      0 cc.  Rmin & Coul turning =   10.8   34.1
+   S-matrix    1 =    1.00000   0.00000 for L=   72, J=   72.0 channel on core I =   0.0 from L=   72,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   72, J =   72.0 channel.
+      72.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.05  0   0 F  0
+ Reaction Xsec    72.0+/72 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    73.0 -,      5 chs,      0 cc.  Rmin & Coul turning =   11.0   34.5
+   S-matrix    1 =    1.00000   0.00000 for L=   73, J=   73.0 channel on core I =   0.0 from L=   73,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   73, J =   73.0 channel.
+      73.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    73.0-/73 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    74.0 +,      5 chs,      0 cc.  Rmin & Coul turning =   11.1   35.0
+   S-matrix    1 =    1.00000   0.00000 for L=   74, J=   74.0 channel on core I =   0.0 from L=   74,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   74, J =   74.0 channel.
+      74.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    74.0+/74 @ 1 =   0.000#, Out:   0.000#   0.000#   0.000f
+
+
+ Total SPIN, PARITY =    75.0 -,      5 chs,      0 cc.  Rmin & Coul turning =   11.2   35.5
+   S-matrix    1 =    1.00000   0.00000 for L=   75, J=   75.0 channel on core I =   0.0 from L=   75,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000  -0.000 deg. for the L =   75, J =   75.0 channel.
+      75.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    75.0-/75 @ 1 =  -0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    76.0 +,      5 chs,      0 cc.  Rmin & Coul turning =   11.4   35.9
+   S-matrix    1 =    1.00000   0.00000 for L=   76, J=   76.0 channel on core I =   0.0 from L=   76,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000  -0.000 deg. for the L =   76, J =   76.0 channel.
+      76.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    76.0+/76 @ 1 =  -0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    77.0 -,      5 chs,      0 cc.  Rmin & Coul turning =   11.6   36.4
+   S-matrix    1 =    1.00000   0.00000 for L=   77, J=   77.0 channel on core I =   0.0 from L=   77,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   77, J =   77.0 channel.
+      77.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    77.0-/77 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    78.0 +,      5 chs,      0 cc.  Rmin & Coul turning =   11.7   36.9
+   S-matrix    1 =    1.00000   0.00000 for L=   78, J=   78.0 channel on core I =   0.0 from L=   78,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000  -0.000 deg. for the L =   78, J =   78.0 channel.
+      78.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    78.0+/78 @ 1 =  -0.000#, Out:   0.000#   0.000#  -0.000f
+
+
+ Total SPIN, PARITY =    79.0 -,      5 chs,      0 cc.  Rmin & Coul turning =   11.9   37.3
+   S-matrix    1 =    1.00000   0.00000 for L=   79, J=   79.0 channel on core I =   0.0 from L=   79,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   79, J =   79.0 channel.
+      79.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.02  0   0 F  0
+ Reaction Xsec    79.0-/79 @ 1 =   0.000#, Out:   0.000#   0.000#   0.000f
+
+
+ Total SPIN, PARITY =    80.0 +,      5 chs,      0 cc.  Rmin & Coul turning =   12.0   37.8
+   S-matrix    1 =    1.00000   0.00000 for L=   80, J=   80.0 channel on core I =   0.0 from L=   80,  Acc. loss =  0.0 D.
+ Elastic phase shift   1 =    0.000   0.000 deg. for the L =   80, J =   80.0 channel.
+      80.0  1.00000000  0.00000000i: elastic S-matrix  @@      0.03  0   0 F  0
+ Reaction Xsec    80.0+/80 @ 1 =   0.000#, Out:   0.000#   0.000#  -0.000f
+
+ Finished all CC sets @    3.00000000    
+0CUMULATIVE REACTION cross section                 = 1243.50314  <L> =     8.70  <L**2> =     86.8
+0CUMULATIVE outgoing cross sections in partition 1 :    0.00000
+0CUMULATIVE outgoing cross sections in partition 2 :***********
+0Cumulative ABSORBTION by Imaginary Potentials     =***********  <L> =    35.17  <L**2> =   1247.1
+   Fusion for specific 4He      M-states :************
+0CUMULATIVE OUTGOING cross section                 =***********
+ To convert to S-factors (MeV.mb = keV.b),  multiply by  1.0701E+02
+
+
+ CROSS SECTIONS FOR OUTGOING 4He      & 4He      in state #   1 with spins & parities 0.0  + &  0.0  +;  0
+
+     0.01 deg.: X-S =   1.5846E+14 mb/sr,
++                                         /R =   9.9998E-01
+     1.00 deg.: X-S =   1.3847E+06 mb/sr,
++                                         /R =   8.7381E-01
+     2.00 deg.: X-S =   7.6100E+04 mb/sr,
++                                         /R =   7.6823E-01
+     3.00 deg.: X-S =   2.2253E+04 mb/sr,
++                                         /R =   1.1370E+00
+     4.00 deg.: X-S =   1.5213E+04 mb/sr,
++                                         /R =   2.4556E+00
+     5.00 deg.: X-S =   1.2810E+04 mb/sr,
++                                         /R =   5.0460E+00
+     6.00 deg.: X-S =   1.0914E+04 mb/sr,
++                                         /R =   8.9097E+00
+     7.00 deg.: X-S =  9028.697287 mb/sr,
++                                         /R =   1.3646E+01
+     8.00 deg.: X-S =  7178.029814 mb/sr,
++                                         /R =   1.8494E+01
+     9.00 deg.: X-S =  5455.266286 mb/sr,
++                                         /R =   2.2494E+01
+    10.00 deg.: X-S =  3940.040723 mb/sr,
++                                         /R =   2.4738E+01
+    11.00 deg.: X-S =  2681.739895 mb/sr,
++                                         /R =   2.4626E+01
+    12.00 deg.: X-S =  1698.679211 mb/sr,
++                                         /R =   2.2066E+01
+    13.00 deg.: X-S =   982.328640 mb/sr,
++                                         /R =   1.7554E+01
+    14.00 deg.: X-S =   503.714144 mb/sr,
++                                         /R =   1.2091E+01
+    15.00 deg.: X-S =   220.687038 mb/sr,
++                                         /R =   6.9703E+00
+    16.00 deg.: X-S =    85.109815 mb/sr,
++                                         /R =   3.4744E+00
+    17.00 deg.: X-S =    49.189037 mb/sr,
++                                         /R =   2.5548E+00
+    18.00 deg.: X-S =    70.399662 mb/sr,
++                                         /R =   4.5876E+00
+    19.00 deg.: X-S =   114.700787 mb/sr,
++                                         /R =   9.2616E+00
+    20.00 deg.: X-S =   158.004429 mb/sr,
++                                         /R =   1.5633E+01
+    21.00 deg.: X-S =   186.087226 mb/sr,
++                                         /R =   2.2332E+01
+    22.00 deg.: X-S =   193.300159 mb/sr,
++                                         /R =   2.7881E+01
+    23.00 deg.: X-S =   180.518846 mb/sr,
++                                         /R =   3.1033E+01
+    24.00 deg.: X-S =   152.786518 mb/sr,
++                                         /R =   3.1066E+01
+    25.00 deg.: X-S =   117.045838 mb/sr,
++                                         /R =   2.7950E+01
+    26.00 deg.: X-S =    80.254700 mb/sr,
++                                         /R =   2.2362E+01
+    27.00 deg.: X-S =    48.058633 mb/sr,
++                                         /R =   1.5531E+01
+    28.00 deg.: X-S =    24.071068 mb/sr,
++                                         /R =   8.9718E+00
+    29.00 deg.: X-S =     9.710300 mb/sr,
++                                         /R =   4.1525E+00
+    30.00 deg.: X-S =     4.470188 mb/sr,
++                                         /R =   2.1827E+00
+    31.00 deg.: X-S =     6.464800 mb/sr,
++                                         /R =   3.5878E+00
+    32.00 deg.: X-S =    13.083493 mb/sr,
++                                         /R =   8.2179E+00
+    33.00 deg.: X-S =    21.615667 mb/sr,
++                                         /R =   1.5304E+01
+    34.00 deg.: X-S =    29.744159 mb/sr,
++                                         /R =   2.3650E+01
+    35.00 deg.: X-S =    35.852917 mb/sr,
++                                         /R =   3.1899E+01
+    36.00 deg.: X-S =    39.139258 mb/sr,
++                                         /R =   3.8835E+01
+    37.00 deg.: X-S =    39.556794 mb/sr,
++                                         /R =   4.3633E+01
+    38.00 deg.: X-S =    37.638265 mb/sr,
++                                         /R =   4.6013E+01
+    39.00 deg.: X-S =    34.256987 mb/sr,
++                                         /R =   4.6282E+01
+    40.00 deg.: X-S =    30.382942 mb/sr,
++                                         /R =   4.5240E+01
+    41.00 deg.: X-S =    26.877801 mb/sr,
++                                         /R =   4.3992E+01
+    42.00 deg.: X-S =    24.356413 mb/sr,
++                                         /R =   4.3713E+01
+    43.00 deg.: X-S =    23.124444 mb/sr,
++                                         /R =   4.5400E+01
+    44.00 deg.: X-S =    23.186209 mb/sr,
++                                         /R =   4.9684E+01
+    45.00 deg.: X-S =    24.305570 mb/sr,
++                                         /R =   5.6722E+01
+    46.00 deg.: X-S =    26.097091 mb/sr,
++                                         /R =   6.6189E+01
+    47.00 deg.: X-S =    28.124199 mb/sr,
++                                         /R =   7.7368E+01
+    48.00 deg.: X-S =    29.985022 mb/sr,
++                                         /R =   8.9298E+01
+    49.00 deg.: X-S =    31.373042 mb/sr,
++                                         /R =   1.0096E+02
+    50.00 deg.: X-S =    32.107229 mb/sr,
++                                         /R =   1.1145E+02
+    51.00 deg.: X-S =    32.133139 mb/sr,
++                                         /R =   1.2011E+02
+    52.00 deg.: X-S =    31.501607 mb/sr,
++                                         /R =   1.2659E+02
+    53.00 deg.: X-S =    30.334352 mb/sr,
++                                         /R =   1.3084E+02
+    54.00 deg.: X-S =    28.786219 mb/sr,
++                                         /R =   1.3306E+02
+    55.00 deg.: X-S =    27.012126 mb/sr,
++                                         /R =   1.3362E+02
+    56.00 deg.: X-S =    25.143950 mb/sr,
++                                         /R =   1.3291E+02
+    57.00 deg.: X-S =    23.279251 mb/sr,
++                                         /R =   1.3131E+02
+    58.00 deg.: X-S =    21.480782 mb/sr,
++                                         /R =   1.2913E+02
+    59.00 deg.: X-S =    19.783595 mb/sr,
++                                         /R =   1.2657E+02
+    60.00 deg.: X-S =    18.205604 mb/sr,
++                                         /R =   1.2381E+02
+    61.00 deg.: X-S =    16.757648 mb/sr,
++                                         /R =   1.2100E+02
+    62.00 deg.: X-S =    15.450176 mb/sr,
++                                         /R =   1.1830E+02
+    63.00 deg.: X-S =    14.295233 mb/sr,
++                                         /R =   1.1594E+02
+    64.00 deg.: X-S =    13.304059 mb/sr,
++                                         /R =   1.1416E+02
+    65.00 deg.: X-S =    12.481861 mb/sr,
++                                         /R =   1.1320E+02
+    66.00 deg.: X-S =    11.822051 mb/sr,
++                                         /R =   1.1319E+02
+    67.00 deg.: X-S =    11.302197 mb/sr,
++                                         /R =   1.1413E+02
+    68.00 deg.: X-S =    10.883386 mb/sr,
++                                         /R =   1.1580E+02
+    69.00 deg.: X-S =    10.513657 mb/sr,
++                                         /R =   1.1775E+02
+    70.00 deg.: X-S =    10.135068 mb/sr,
++                                         /R =   1.1936E+02
+    71.00 deg.: X-S =     9.692994 mb/sr,
++                                         /R =   1.1994E+02
+    72.00 deg.: X-S =     9.145667 mb/sr,
++                                         /R =   1.1879E+02
+    73.00 deg.: X-S =     8.471889 mb/sr,
++                                         /R =   1.1540E+02
+    74.00 deg.: X-S =     7.675216 mb/sr,
++                                         /R =   1.0955E+02
+    75.00 deg.: X-S =     6.783707 mb/sr,
++                                         /R =   1.0138E+02
+    76.00 deg.: X-S =     5.845245 mb/sr,
++                                         /R =   9.1381E+01
+    77.00 deg.: X-S =     4.919357 mb/sr,
++                                         /R =   8.0388E+01
+    78.00 deg.: X-S =     4.067137 mb/sr,
++                                         /R =   6.9416E+01
+    79.00 deg.: X-S =     3.341206 mb/sr,
++                                         /R =   5.9515E+01
+    80.00 deg.: X-S =     2.777533 mb/sr,
++                                         /R =   5.1596E+01
+    81.00 deg.: X-S =     2.390494 mb/sr,
++                                         /R =   4.6275E+01
+    82.00 deg.: X-S =     2.171851 mb/sr,
++                                         /R =   4.3781E+01
+    83.00 deg.: X-S =     2.093546 mb/sr,
++                                         /R =   4.3916E+01
+    84.00 deg.: X-S =     2.113510 mb/sr,
++                                         /R =   4.6103E+01
+    85.00 deg.: X-S =     2.183186 mb/sr,
++                                         /R =   4.9489E+01
+    86.00 deg.: X-S =     2.255324 mb/sr,
++                                         /R =   5.3092E+01
+    87.00 deg.: X-S =     2.290669 mb/sr,
++                                         /R =   5.5962E+01
+    88.00 deg.: X-S =     2.262579 mb/sr,
++                                         /R =   5.7329E+01
+    89.00 deg.: X-S =     2.159074 mb/sr,
++                                         /R =   5.6702E+01
+    90.00 deg.: X-S =     1.982397 mb/sr,
++                                         /R =   5.3928E+01
+    91.00 deg.: X-S =     1.746554 mb/sr,
++                                         /R =   4.9185E+01
+    92.00 deg.: X-S =     1.473614 mb/sr,
++                                         /R =   4.2934E+01
+    93.00 deg.: X-S =     1.189575 mb/sr,
++                                         /R =   3.5836E+01
+    94.00 deg.: X-S =     0.920517 mb/sr,
++                                         /R =   2.8657E+01
+    95.00 deg.: X-S =     0.689502 mb/sr,
++                                         /R =   2.2169E+01
+    96.00 deg.: X-S =     0.514415 mb/sr,
++                                         /R =   1.7072E+01
+    97.00 deg.: X-S =     0.406705 mb/sr,
++                                         /R =   1.3925E+01
+    98.00 deg.: X-S =     0.370832 mb/sr,
++                                         /R =   1.3091E+01
+    99.00 deg.: X-S =     0.404211 mb/sr,
++                                         /R =   1.4705E+01
+   100.00 deg.: X-S =     0.497524 mb/sr,
++                                         /R =   1.8643E+01
+   101.00 deg.: X-S =     0.635374 mb/sr,
++                                         /R =   2.4510E+01
+   102.00 deg.: X-S =     0.797411 mb/sr,
++                                         /R =   3.1650E+01
+   103.00 deg.: X-S =     0.960070 mb/sr,
++                                         /R =   3.9189E+01
+   104.00 deg.: X-S =     1.099007 mb/sr,
++                                         /R =   4.6112E+01
+   105.00 deg.: X-S =     1.192188 mb/sr,
++                                         /R =   5.1392E+01
+   106.00 deg.: X-S =     1.223305 mb/sr,
++                                         /R =   5.4152E+01
+   107.00 deg.: X-S =     1.185005 mb/sr,
++                                         /R =   5.3842E+01
+   108.00 deg.: X-S =     1.081244 mb/sr,
++                                         /R =   5.0401E+01
+   109.00 deg.: X-S =     0.928073 mb/sr,
++                                         /R =   4.4362E+01
+   110.00 deg.: X-S =     0.752349 mb/sr,
++                                         /R =   3.6860E+01
+   111.00 deg.: X-S =     0.588204 mb/sr,
++                                         /R =   2.9525E+01
+   112.00 deg.: X-S =     0.471575 mb/sr,
++                                         /R =   2.4240E+01
+   113.00 deg.: X-S =     0.433588 mb/sr,
++                                         /R =   2.2813E+01
+   114.00 deg.: X-S =     0.493975 mb/sr,
++                                         /R =   2.6592E+01
+   115.00 deg.: X-S =     0.655895 mb/sr,
++                                         /R =   3.6111E+01
+   116.00 deg.: X-S =     0.903411 mb/sr,
++                                         /R =   5.0845E+01
+   117.00 deg.: X-S =     1.202521 mb/sr,
++                                         /R =   6.9157E+01
+   118.00 deg.: X-S =     1.505944 mb/sr,
++                                         /R =   8.8462E+01
+   119.00 deg.: X-S =     1.761144 mb/sr,
++                                         /R =   1.0562E+02
+   120.00 deg.: X-S =     1.920271 mb/sr,
++                                         /R =   1.1754E+02
+   121.00 deg.: X-S =     1.950193 mb/sr,
++                                         /R =   1.2177E+02
+   122.00 deg.: X-S =     1.840536 mb/sr,
++                                         /R =   1.1719E+02
+   123.00 deg.: X-S =     1.607870 mb/sr,
++                                         /R =   1.0436E+02
+   124.00 deg.: X-S =     1.294797 mb/sr,
++                                         /R =   8.5630E+01
+   125.00 deg.: X-S =     0.963650 mb/sr,
++                                         /R =   6.4911E+01
+   126.00 deg.: X-S =     0.685598 mb/sr,
++                                         /R =   4.7019E+01
+   127.00 deg.: X-S =     0.526999 mb/sr,
++                                         /R =   3.6784E+01
+   128.00 deg.: X-S =     0.535570 mb/sr,
++                                         /R =   3.8031E+01
+   129.00 deg.: X-S =     0.729207 mb/sr,
++                                         /R =   5.2661E+01
+   130.00 deg.: X-S =     1.089979 mb/sr,
++                                         /R =   8.0021E+01
+   131.00 deg.: X-S =     1.564946 mb/sr,
++                                         /R =   1.1675E+02
+   132.00 deg.: X-S =     2.074202 mb/sr,
++                                         /R =   1.5720E+02
+   133.00 deg.: X-S =     2.525033 mb/sr,
++                                         /R =   1.9433E+02
+   134.00 deg.: X-S =     2.829796 mb/sr,
++                                         /R =   2.2108E+02
+   135.00 deg.: X-S =     2.924116 mb/sr,
++                                         /R =   2.3181E+02
+   136.00 deg.: X-S =     2.781708 mb/sr,
++                                         /R =   2.2370E+02
+   137.00 deg.: X-S =     2.422540 mb/sr,
++                                         /R =   1.9754E+02
+   138.00 deg.: X-S =     1.912173 mb/sr,
++                                         /R =   1.5806E+02
+   139.00 deg.: X-S =     1.351749 mb/sr,
++                                         /R =   1.1322E+02
+   140.00 deg.: X-S =     0.860011 mb/sr,
++                                         /R =   7.2968E+01
+   141.00 deg.: X-S =     0.550415 mb/sr,
++                                         /R =   4.7289E+01
+   142.00 deg.: X-S =     0.507652 mb/sr,
++                                         /R =   4.4150E+01
+   143.00 deg.: X-S =     0.768331 mb/sr,
++                                         /R =   6.7617E+01
+   144.00 deg.: X-S =     1.310032 mb/sr,
++                                         /R =   1.1662E+02
+   145.00 deg.: X-S =     2.051584 mb/sr,
++                                         /R =   1.8469E+02
+   146.00 deg.: X-S =     2.865322 mb/sr,
++                                         /R =   2.6076E+02
+   147.00 deg.: X-S =     3.599723 mb/sr,
++                                         /R =   3.3105E+02
+   148.00 deg.: X-S =     4.108591 mb/sr,
++                                         /R =   3.8172E+02
+   149.00 deg.: X-S =     4.281393 mb/sr,
++                                         /R =   4.0171E+02
+   150.00 deg.: X-S =     4.068684 mb/sr,
++                                         /R =   3.8540E+02
+   151.00 deg.: X-S =     3.497148 mb/sr,
++                                         /R =   3.3432E+02
+   152.00 deg.: X-S =     2.670419 mb/sr,
++                                         /R =   2.5756E+02
+   153.00 deg.: X-S =     1.754415 mb/sr,
++                                         /R =   1.7066E+02
+   154.00 deg.: X-S =     0.948923 mb/sr,
++                                         /R =   9.3070E+01
+   155.00 deg.: X-S =     0.449995 mb/sr,
++                                         /R =   4.4485E+01
+   156.00 deg.: X-S =     0.409919 mb/sr,
++                                         /R =   4.0832E+01
+   157.00 deg.: X-S =     0.902489 mb/sr,
++                                         /R =   9.0552E+01
+   158.00 deg.: X-S =     1.900914 mb/sr,
++                                         /R =   1.9206E+02
+   159.00 deg.: X-S =     3.273767 mb/sr,
++                                         /R =   3.3296E+02
+   160.00 deg.: X-S =     4.801367 mb/sr,
++                                         /R =   4.9142E+02
+   161.00 deg.: X-S =     6.211232 mb/sr,
++                                         /R =   6.3955E+02
+   162.00 deg.: X-S =     7.227515 mb/sr,
++                                         /R =   7.4843E+02
+   163.00 deg.: X-S =     7.626284 mb/sr,
++                                         /R =   7.9398E+02
+   164.00 deg.: X-S =     7.286797 mb/sr,
++                                         /R =   7.6248E+02
+   165.00 deg.: X-S =     6.228871 mb/sr,
++                                         /R =   6.5489E+02
+   166.00 deg.: X-S =     4.628261 mb/sr,
++                                         /R =   4.8877E+02
+   167.00 deg.: X-S =     2.805319 mb/sr,
++                                         /R =   2.9748E+02
+   168.00 deg.: X-S =     1.186660 mb/sr,
++                                         /R =   1.2632E+02
+   169.00 deg.: X-S =     0.244313 mb/sr,
++                                         /R =   2.6098E+01
+   170.00 deg.: X-S =     0.421071 mb/sr,
++                                         /R =   4.5125E+01
+   171.00 deg.: X-S =     2.053688 mb/sr,
++                                         /R =   2.2073E+02
+   172.00 deg.: X-S =     5.306671 mb/sr,
++                                         /R =   5.7183E+02
+   173.00 deg.: X-S =    10.128277 mb/sr,
++                                         /R =   1.0939E+03
+   174.00 deg.: X-S =    16.237280 mb/sr,
++                                         /R =   1.7572E+03
+   175.00 deg.: X-S =    23.144325 mb/sr,
++                                         /R =   2.5088E+03
+   176.00 deg.: X-S =    30.206208 mb/sr,
++                                         /R =   3.2788E+03
+   177.00 deg.: X-S =    36.705998 mb/sr,
++                                         /R =   3.9886E+03
+   178.00 deg.: X-S =    41.947516 mb/sr,
++                                         /R =   4.5617E+03
+   179.00 deg.: X-S =    45.350084 mb/sr,
++                                         /R =   4.9340E+03
+   179.99 deg.: X-S =    46.528996 mb/sr,
++                                         /R =   5.0630E+03
+                                           Integrated********** mb, over [   0.000, 180.000] at    95.0000 MeV 
+
+ CROSS SECTIONS FOR OUTGOING n        & 7Be      in state #   1 with spins & parities 0.5  + &  1.5  -;  0
+
+     0.00 deg.: X-S =   5.0311E+05 mb/sr,
++                                         REAC   2.7035E+05 mb
+     1.00 deg.: X-S =   4.6469E+05 mb/sr,
+     2.00 deg.: X-S =   3.6720E+05 mb/sr,
+     3.00 deg.: X-S =   2.5250E+05 mb/sr,
+     4.00 deg.: X-S =   1.6044E+05 mb/sr,
+     5.00 deg.: X-S =   1.0723E+05 mb/sr,
+     6.00 deg.: X-S =   8.3533E+04 mb/sr,
+     7.00 deg.: X-S =   7.0804E+04 mb/sr,
+     8.00 deg.: X-S =   5.8502E+04 mb/sr,
+     9.00 deg.: X-S =   4.7170E+04 mb/sr,
+    10.00 deg.: X-S =   3.9790E+04 mb/sr,
+    11.00 deg.: X-S =   3.5400E+04 mb/sr,
+    12.00 deg.: X-S =   3.1587E+04 mb/sr,
+    13.00 deg.: X-S =   2.8686E+04 mb/sr,
+    14.00 deg.: X-S =   2.8218E+04 mb/sr,
+    15.00 deg.: X-S =   2.9203E+04 mb/sr,
+    16.00 deg.: X-S =   2.9379E+04 mb/sr,
+    17.00 deg.: X-S =   2.9215E+04 mb/sr,
+    18.00 deg.: X-S =   3.1236E+04 mb/sr,
+    19.00 deg.: X-S =   3.5363E+04 mb/sr,
+    20.00 deg.: X-S =   3.8423E+04 mb/sr,
+    21.00 deg.: X-S =   3.9237E+04 mb/sr,
+    22.00 deg.: X-S =   4.0738E+04 mb/sr,
+    23.00 deg.: X-S =   4.5039E+04 mb/sr,
+    24.00 deg.: X-S =   4.9515E+04 mb/sr,
+    25.00 deg.: X-S =   5.0854E+04 mb/sr,
+    26.00 deg.: X-S =   5.0599E+04 mb/sr,
+    27.00 deg.: X-S =   5.2672E+04 mb/sr,
+    28.00 deg.: X-S =   5.6695E+04 mb/sr,
+    29.00 deg.: X-S =   5.8359E+04 mb/sr,
+    30.00 deg.: X-S =   5.6539E+04 mb/sr,
+    31.00 deg.: X-S =   5.5290E+04 mb/sr,
+    32.00 deg.: X-S =   5.7174E+04 mb/sr,
+    33.00 deg.: X-S =   5.8945E+04 mb/sr,
+    34.00 deg.: X-S =   5.6886E+04 mb/sr,
+    35.00 deg.: X-S =   5.2979E+04 mb/sr,
+    36.00 deg.: X-S =   5.1678E+04 mb/sr,
+    37.00 deg.: X-S =   5.2666E+04 mb/sr,
+    38.00 deg.: X-S =   5.1545E+04 mb/sr,
+    39.00 deg.: X-S =   4.7103E+04 mb/sr,
+    40.00 deg.: X-S =   4.3151E+04 mb/sr,
+    41.00 deg.: X-S =   4.2249E+04 mb/sr,
+    42.00 deg.: X-S =   4.1874E+04 mb/sr,
+    43.00 deg.: X-S =   3.8900E+04 mb/sr,
+    44.00 deg.: X-S =   3.4524E+04 mb/sr,
+    45.00 deg.: X-S =   3.1868E+04 mb/sr,
+    46.00 deg.: X-S =   3.0968E+04 mb/sr,
+    47.00 deg.: X-S =   2.9351E+04 mb/sr,
+    48.00 deg.: X-S =   2.6349E+04 mb/sr,
+    49.00 deg.: X-S =   2.3696E+04 mb/sr,
+    50.00 deg.: X-S =   2.2212E+04 mb/sr,
+    51.00 deg.: X-S =   2.0785E+04 mb/sr,
+    52.00 deg.: X-S =   1.8835E+04 mb/sr,
+    53.00 deg.: X-S =   1.7271E+04 mb/sr,
+    54.00 deg.: X-S =   1.6412E+04 mb/sr,
+    55.00 deg.: X-S =   1.5180E+04 mb/sr,
+    56.00 deg.: X-S =   1.3246E+04 mb/sr,
+    57.00 deg.: X-S =   1.1957E+04 mb/sr,
+    58.00 deg.: X-S =   1.1989E+04 mb/sr,
+    59.00 deg.: X-S =   1.1863E+04 mb/sr,
+    60.00 deg.: X-S =   1.0287E+04 mb/sr,
+    61.00 deg.: X-S =  8458.675832 mb/sr,
+    62.00 deg.: X-S =  8207.330299 mb/sr,
+    63.00 deg.: X-S =  8952.208403 mb/sr,
+    64.00 deg.: X-S =  8590.530773 mb/sr,
+    65.00 deg.: X-S =  6871.970144 mb/sr,
+    66.00 deg.: X-S =  5715.354001 mb/sr,
+    67.00 deg.: X-S =  6090.738581 mb/sr,
+    68.00 deg.: X-S =  6617.355560 mb/sr,
+    69.00 deg.: X-S =  5905.773878 mb/sr,
+    70.00 deg.: X-S =  4626.980983 mb/sr,
+    71.00 deg.: X-S =  4212.018772 mb/sr,
+    72.00 deg.: X-S =  4661.285180 mb/sr,
+    73.00 deg.: X-S =  4848.956679 mb/sr,
+    74.00 deg.: X-S =  4354.092425 mb/sr,
+    75.00 deg.: X-S =  3856.056447 mb/sr,
+    76.00 deg.: X-S =  3942.570034 mb/sr,
+    77.00 deg.: X-S =  4420.226762 mb/sr,
+    78.00 deg.: X-S =  4822.830533 mb/sr,
+    79.00 deg.: X-S =  5014.376878 mb/sr,
+    80.00 deg.: X-S =  5212.724939 mb/sr,
+    81.00 deg.: X-S =  5725.843037 mb/sr,
+    82.00 deg.: X-S =  6646.510737 mb/sr,
+    83.00 deg.: X-S =  7679.764480 mb/sr,
+    84.00 deg.: X-S =  8470.931017 mb/sr,
+    85.00 deg.: X-S =  9171.364151 mb/sr,
+    86.00 deg.: X-S =   1.0275E+04 mb/sr,
+    87.00 deg.: X-S =   1.1774E+04 mb/sr,
+    88.00 deg.: X-S =   1.3072E+04 mb/sr,
+    89.00 deg.: X-S =   1.3997E+04 mb/sr,
+    90.00 deg.: X-S =   1.5161E+04 mb/sr,
+    91.00 deg.: X-S =   1.6829E+04 mb/sr,
+    92.00 deg.: X-S =   1.8243E+04 mb/sr,
+    93.00 deg.: X-S =   1.8895E+04 mb/sr,
+    94.00 deg.: X-S =   1.9627E+04 mb/sr,
+    95.00 deg.: X-S =   2.1281E+04 mb/sr,
+    96.00 deg.: X-S =   2.2936E+04 mb/sr,
+    97.00 deg.: X-S =   2.3121E+04 mb/sr,
+    98.00 deg.: X-S =   2.2461E+04 mb/sr,
+    99.00 deg.: X-S =   2.3070E+04 mb/sr,
+   100.00 deg.: X-S =   2.5047E+04 mb/sr,
+   101.00 deg.: X-S =   2.5814E+04 mb/sr,
+   102.00 deg.: X-S =   2.4067E+04 mb/sr,
+   103.00 deg.: X-S =   2.2243E+04 mb/sr,
+   104.00 deg.: X-S =   2.3019E+04 mb/sr,
+   105.00 deg.: X-S =   2.4925E+04 mb/sr,
+   106.00 deg.: X-S =   2.4287E+04 mb/sr,
+   107.00 deg.: X-S =   2.0937E+04 mb/sr,
+   108.00 deg.: X-S =   1.8766E+04 mb/sr,
+   109.00 deg.: X-S =   1.9898E+04 mb/sr,
+   110.00 deg.: X-S =   2.1374E+04 mb/sr,
+   111.00 deg.: X-S =   1.9597E+04 mb/sr,
+   112.00 deg.: X-S =   1.5780E+04 mb/sr,
+   113.00 deg.: X-S =   1.4107E+04 mb/sr,
+   114.00 deg.: X-S =   1.5500E+04 mb/sr,
+   115.00 deg.: X-S =   1.6437E+04 mb/sr,
+   116.00 deg.: X-S =   1.4328E+04 mb/sr,
+   117.00 deg.: X-S =   1.1176E+04 mb/sr,
+   118.00 deg.: X-S =   1.0351E+04 mb/sr,
+   119.00 deg.: X-S =   1.1730E+04 mb/sr,
+   120.00 deg.: X-S =   1.2269E+04 mb/sr,
+   121.00 deg.: X-S =   1.0580E+04 mb/sr,
+   122.00 deg.: X-S =  8581.989168 mb/sr,
+   123.00 deg.: X-S =  8395.364297 mb/sr,
+   124.00 deg.: X-S =  9465.786833 mb/sr,
+   125.00 deg.: X-S =  9770.929879 mb/sr,
+   126.00 deg.: X-S =  8736.140433 mb/sr,
+   127.00 deg.: X-S =  7666.749299 mb/sr,
+   128.00 deg.: X-S =  7661.509387 mb/sr,
+   129.00 deg.: X-S =  8263.184500 mb/sr,
+   130.00 deg.: X-S =  8385.199759 mb/sr,
+   131.00 deg.: X-S =  7786.902459 mb/sr,
+   132.00 deg.: X-S =  7138.371778 mb/sr,
+   133.00 deg.: X-S =  6977.788223 mb/sr,
+   134.00 deg.: X-S =  7109.698798 mb/sr,
+   135.00 deg.: X-S =  7022.795324 mb/sr,
+   136.00 deg.: X-S =  6556.452552 mb/sr,
+   137.00 deg.: X-S =  5992.332031 mb/sr,
+   138.00 deg.: X-S =  5632.264206 mb/sr,
+   139.00 deg.: X-S =  5470.362615 mb/sr,
+   140.00 deg.: X-S =  5287.983174 mb/sr,
+   141.00 deg.: X-S =  4949.423278 mb/sr,
+   142.00 deg.: X-S =  4532.519178 mb/sr,
+   143.00 deg.: X-S =  4218.560509 mb/sr,
+   144.00 deg.: X-S =  4123.124842 mb/sr,
+   145.00 deg.: X-S =  4218.558195 mb/sr,
+   146.00 deg.: X-S =  4373.890938 mb/sr,
+   147.00 deg.: X-S =  4495.081908 mb/sr,
+   148.00 deg.: X-S =  4678.228161 mb/sr,
+   149.00 deg.: X-S =  5182.638691 mb/sr,
+   150.00 deg.: X-S =  6160.287728 mb/sr,
+   151.00 deg.: X-S =  7438.746653 mb/sr,
+   152.00 deg.: X-S =  8712.603323 mb/sr,
+   153.00 deg.: X-S =  9990.490496 mb/sr,
+   154.00 deg.: X-S =   1.1706E+04 mb/sr,
+   155.00 deg.: X-S =   1.4250E+04 mb/sr,
+   156.00 deg.: X-S =   1.7455E+04 mb/sr,
+   157.00 deg.: X-S =   2.0734E+04 mb/sr,
+   158.00 deg.: X-S =   2.3838E+04 mb/sr,
+   159.00 deg.: X-S =   2.7355E+04 mb/sr,
+   160.00 deg.: X-S =   3.2229E+04 mb/sr,
+   161.00 deg.: X-S =   3.8601E+04 mb/sr,
+   162.00 deg.: X-S =   4.5357E+04 mb/sr,
+   163.00 deg.: X-S =   5.1364E+04 mb/sr,
+   164.00 deg.: X-S =   5.7372E+04 mb/sr,
+   165.00 deg.: X-S =   6.5913E+04 mb/sr,
+   166.00 deg.: X-S =   7.8319E+04 mb/sr,
+   167.00 deg.: X-S =   9.2171E+04 mb/sr,
+   168.00 deg.: X-S =   1.0370E+05 mb/sr,
+   169.00 deg.: X-S =   1.1391E+05 mb/sr,
+   170.00 deg.: X-S =   1.3040E+05 mb/sr,
+   171.00 deg.: X-S =   1.5927E+05 mb/sr,
+   172.00 deg.: X-S =   1.9499E+05 mb/sr,
+   173.00 deg.: X-S =   2.2417E+05 mb/sr,
+   174.00 deg.: X-S =   2.4759E+05 mb/sr,
+   175.00 deg.: X-S =   3.0016E+05 mb/sr,
+   176.00 deg.: X-S =   4.3904E+05 mb/sr,
+   177.00 deg.: X-S =   6.9547E+05 mb/sr,
+   178.00 deg.: X-S =   1.0261E+06 mb/sr,
+   179.00 deg.: X-S =   1.3130E+06 mb/sr,
+   180.00 deg.: X-S =   1.4272E+06 mb/sr,
+                                           Integrated********** mb, over [   0.000, 180.000] at    95.0000 MeV 
+ Finished all xsecs @    3.01562500    
+
+  The following files have been created:
+   3:local copy of User input.            6:standard output.                   
+   7:elastic  S-matrix elements.         12:transfer kernels.                  
+  13:total cross sections/state.         16:tables of cross sections.          
+  35:Astrophysics S-factors  / Ecm.      38:cross sections for each J/pi.      
+  39:cross sections for each Ecm.        40:all cross sectns. for each Elab.   
+  45:scat phase shift as E functions.    46:bs wave functions & ANC ratios.    
+  56:Fusion for each Jtotal.             75:S-factors for lab energies.        
+ 201:Separate cross sections.           202:Separate cross sections.           
+
+ PARAMETERS : MAXQRN   MFNL   MLOC  LMAX1 MCLIST
+    ALLOWED :      4     25     10    100      6
+    REQUIRED:      1      4     10     82      3
+
+
+ ACCURACY ANALYSIS at    95.000 MeV :
+
+  Elastic h*k = 0.107 so OK       compared with 0.200
+
+   Real(S-el) > 0.01 first at J =       1.0
+   Real(S-el) > 0.10 first at J =       8.0
+   Real(S-el) > 0.50 first at J =      14.0
+   Real(S-el) > 0.90 first at J =      14.0
+   Real(S-el) > 0.99 first at J =      16.0
+   R-turn =    37.82 fm    at J =      80.0
+
+ Forward-angle excitation cut off below   0.184 deg by max JT =      80.0
+                              and below   0.232 deg by max R.
+
+
+ 1: Recommended RNL: non-local width >  12.20 cf:  30.00 fm: OK      
+    Recommended CENTRE: centration   ~   1.20 cf:   0.00 fm
+
+ Total CPU  0 time =       3.03 seconds
